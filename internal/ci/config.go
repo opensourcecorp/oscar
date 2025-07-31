@@ -2,8 +2,11 @@ package ci
 
 // Config holds metadata for a given language, and its individual CI tasks.
 type Config struct {
+	// LanguageName is the human-readable name of the programming language having [Task]s run
+	// against it.
 	LanguageName string
-	CITasks      []Task
+	// Tasks holds the [Task]s to be run.
+	Tasks []Task
 }
 
 // Task holds metadata for a given CI task.
@@ -25,7 +28,7 @@ func GetCIConfigs() []Config {
 	return []Config{
 		{
 			LanguageName: "Go",
-			CITasks: []Task{
+			Tasks: []Task{
 				{
 					InfoText:  "Generate code",
 					RunScript: "go generate ./...",
@@ -33,6 +36,10 @@ func GetCIConfigs() []Config {
 				{
 					InfoText:  "Format code",
 					RunScript: "go fmt ./...",
+				},
+				{
+					InfoText:  "Build",
+					RunScript: "go build ./main.go",
 				},
 				{
 					InfoText:  "Vet",

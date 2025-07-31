@@ -1,24 +1,16 @@
 package main
 
 import (
-	"fmt"
+	"context"
 	"os"
 
-	"github.com/opensourcecorp/oscar/internal/ci"
+	icli "github.com/opensourcecorp/oscar/internal/cli"
+	iprint "github.com/opensourcecorp/oscar/internal/print"
 )
 
-var banner = `
-   ____________________
- /____________________/|
-|  _   _   _  _   _  |/|
-| | | |_  |  |_| |_| |/|
-| |_|  _| |_ | | | \ |/|
-|____________________|/
-`
-
 func main() {
-	fmt.Println(banner)
-	if err := ci.Run(); err != nil {
+	iprint.Banner()
+	if err := icli.NewRootCmd().Run(context.Background(), os.Args); err != nil {
 		// just exit, because all the errors were already logged
 		os.Exit(1)
 	}

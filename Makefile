@@ -12,8 +12,8 @@ SHELL = /usr/bin/env bash -euo pipefail
 
 all: ci
 
-ci:
-	@go run ./main.go
+ci: clean
+	@go run ./main.go ci
 
 # test is just an alias for ci
 test: ci
@@ -60,9 +60,10 @@ clean:
 		*cache* \
 		.*cache* \
 		build/ \
-		dist/
+		dist/ \
+		./main
 
-image-build: clean
+build-image: clean
 	@$(DOCKER) build \
 		--progress plain \
 		--build-arg GO_VERSION="$$(awk '/^go/ { print $$2 }' go.mod)" \
