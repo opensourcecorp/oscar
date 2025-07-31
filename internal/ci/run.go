@@ -41,17 +41,8 @@ func Run() (err error) {
 	fmt.Printf("Initializing the host, this might take some time...\n")
 	for _, c := range ciConfigs {
 		for _, t := range c.Tasks {
-			if t.InitScript != "" {
-				initSplit := strings.Split(t.InitScript, " ")
-				if len(initSplit) <= 1 {
-					iprint.Errorf(
-						"Internal Error: InitScript struct field '%s:<%s>' was not well-formed: '%s'\n",
-						c.LanguageName, t.InfoText, t.InitScript,
-					)
-					return errInternal
-				}
-
-				cmd := exec.Command(initSplit[0], initSplit[1:]...)
+			if len(t.InitScript) != 0 {
+				cmd := exec.Command(t.InitScript[0], t.InitScript[1:]...)
 				if output, err := cmd.CombinedOutput(); err != nil {
 					iprint.Errorf(
 						"running initialization for '%s:<%s>: %v -- output: %s",
@@ -84,26 +75,35 @@ func Run() (err error) {
 			// NOTE: no trailing newline on purpose
 			fmt.Printf("> %s %s............", t.InfoText, taskBannerPadding)
 
-			splitCmd := strings.Split(t.RunScript, " ")
-			cmd := exec.Command(splitCmd[0], splitCmd[1:]...)
+			cmd := exec.Command(t.RunScript[0], t.RunScript[1:]...)
 
-			output, err := cmd.CombinedOutput()
+			// NOTE: this error is checked later
+			output, runErr := cmd.CombinedOutput()
+
 			if err := git.Update(); err != nil {
 				iprint.Errorf("Internal Error: %v\n", err)
 				return errInternal
 			}
-			// TODO: make this logic cleaner, e.g. both failure cases can happen during the same
-			// Task and this doesn't handle that at the moment
+			gitStatusHasChanged, err := git.StatusHasChanged()
 			if err != nil {
+				iprint.Errorf("Internal Error: %v\n", err)
+				return errInternal
+			}
+
+			if runErr != nil || gitStatusHasChanged {
 				iprint.Errorf("FAILED!\n")
 				iprint.Errorf("\n")
-				iprint.Errorf("%s\n", string(output))
-				failures = append(failures, t.InfoText)
-			} else if git.HasChanged() {
-				iprint.Errorf("FAILED!\n\n")
-				iprint.Errorf("Files CHANGED during run: %#v\n", git.CurrentStatus.Diff)
-				iprint.Errorf("Files CREATED during run: %#v\n", git.CurrentStatus.UntrackedFiles)
-				iprint.Errorf("\n")
+
+				if runErr != nil {
+					iprint.Errorf("%s\n", string(output))
+				}
+
+				if gitStatusHasChanged {
+					iprint.Errorf("Files ~CHANGED~ during run: %+v\n", git.CurrentStatus.Diff)
+					iprint.Errorf("Files +CREATED+ during run: %+v\n", git.CurrentStatus.UntrackedFiles)
+					iprint.Errorf("\n")
+				}
+
 				failures = append(failures, t.InfoText)
 
 				// Also need to reset the baseline status
@@ -120,7 +120,7 @@ func Run() (err error) {
 
 	if len(failures) > 0 {
 		iprint.Errorf("\n================================================================\n")
-		iprint.Errorf("The following checks either failed, or caused a git diff:\n")
+		iprint.Errorf("The following checks failed and/or caused a git diff:\n")
 		for _, f := range failures {
 			iprint.Errorf("- %s\n", f)
 		}

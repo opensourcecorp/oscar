@@ -15,7 +15,7 @@ func Errorf(format string, args ...any) {
 	}
 }
 
-// Errorf is a helper function that prints debug logs if requested.
+// Debugf is a helper function that prints debug logs if requested.
 func Debugf(format string, args ...any) {
 	if os.Getenv(consts.DebugEnvVarName) != "" {
 		format = "DEBUG: " + format
@@ -23,6 +23,7 @@ func Debugf(format string, args ...any) {
 	}
 }
 
+// Banner prints the oscar banner.
 func Banner() {
 	var banner = `
    ____________________

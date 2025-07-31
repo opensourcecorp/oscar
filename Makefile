@@ -1,6 +1,7 @@
 SHELL = /usr/bin/env bash -euo pipefail
 
 BINNAME := oscar
+BINPATH := ./cmd/$(BINNAME)
 
 DOCKER ?= docker
 OCI_REGISTRY ?= ghcr.io
@@ -13,7 +14,7 @@ SHELL = /usr/bin/env bash -euo pipefail
 all: ci
 
 ci: clean
-	@go run ./main.go ci
+	@go run ./cmd/oscar/main.go ci
 
 # test is just an alias for ci
 test: ci
@@ -26,8 +27,8 @@ ci-container:
 		.
 
 build: clean
-	@mkdir -p build/$$(go env GOOS)-$$(go env GOARCH)
-	@go build -o build/$$(go env GOOS)-$$(go env GOARCH)/$(BINNAME)
+	@mkdir -p ./build/$$(go env GOOS)-$$(go env GOARCH)
+	@go build -o ./build/$$(go env GOOS)-$$(go env GOARCH)/$(BINNAME) $(BINPATH)
 
 xbuild: clean
 	@for target in \
@@ -43,7 +44,7 @@ xbuild: clean
 		outdir=build/"$${GOOS}-$${GOARCH}" ; \
 		mkdir -p "$${outdir}" ; \
 		printf "Building for %s-%s into build/ ...\n" "$${GOOS}" "$${GOARCH}" ; \
-		GOOS="$${GOOS}" GOARCH="$${GOARCH}" go build -o "$${outdir}"/$(BINNAME) ; \
+		GOOS="$${GOOS}" GOARCH="$${GOARCH}" go build -o "$${outdir}"/$(BINNAME) $(BINPATH) ; \
 	done
 
 package: xbuild
@@ -59,8 +60,10 @@ clean:
 		/tmp/$(BINNAME)-tests \
 		*cache* \
 		.*cache* \
+		*.log \
 		build/ \
 		dist/ \
+		$(BINNAME) \
 		./main
 
 build-image: clean
