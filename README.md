@@ -14,24 +14,16 @@ push, deploy, etc. In this way, you can think of `oscar` being much like a Jenki
 
 ## How to use
 
-To build & run `oscar` locally, you can clone this repo, and run:
+Before getting started, note that `oscar` has a few host-system runtime dependencies. Some of these
+may someday be replaced natively in the future, but some are integral to how `oscar` works
+internally.
 
-    make build-image
+* `bash` (version 4.4+)
+* `git`
+* `curl`
+* `tar`
 
-from the repo root. This will build (by default) an image tagged as
-`ghcr.io/opensourcecorp/oscar:latest`. Please be patient, as `oscar` has a lot of build-time
-dependencies that it needs to fetch; and note that the resulting image will be quite large!
+TODO:
 
-To actually run `oscar`, you will need to run the image's container with your local folder mounted
-to it:
-
-    docker run --rm -it -v "${PWD}":/home/oscar/src ghcr.io/opensourcecorp/oscar:latest <subcommand> # e.g. 'test'
-
-Note that `oscar`'s instructions are provided within a container runtime context only. As `oscar`
-depends on many system & CLI utilities being present at runtime, it is an unfair assumption that
-someone will have their host machine configured with all of these disparate tools.
-
-If you really want to get `oscar` working on a dedicated machine, it's certainly easy enough to do
--- just fire up a Debian-based machine, grab the `scripts/sysinit.sh` script, and take note of the
-order of things specified in the top-level `Containerfile`. Note that `oscar`'s container image is
-built off of Debian's unstable/"Sid" branch, and has not been tested on a stable release.
+* Run as image from ghcr
+* etc.

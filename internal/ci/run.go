@@ -41,12 +41,11 @@ func Run() (err error) {
 	fmt.Printf("Initializing the host, this might take some time...\n")
 	for _, c := range ciConfigs {
 		for _, t := range c.Tasks {
-			if len(t.InitScript) != 0 {
-				cmd := exec.Command(t.InitScript[0], t.InitScript[1:]...)
-				if output, err := cmd.CombinedOutput(); err != nil {
+			if t.InitFunc != nil {
+				if err := t.InitFunc(); err != nil {
 					iprint.Errorf(
-						"running initialization for '%s:<%s>: %v -- output: %s",
-						c.LanguageName, t.InfoText, err, string(output),
+						"running initialization for '%s:<%s>: %v",
+						c.LanguageName, t.InfoText, err,
 					)
 					return errInternal
 				}
@@ -71,6 +70,10 @@ func Run() (err error) {
 		)
 
 		for _, t := range c.Tasks {
+			if t.RunScript == nil {
+				continue
+			}
+
 			taskBannerPadding := strings.Repeat(".", longestInfoTextLength-len(t.InfoText))
 			// NOTE: no trailing newline on purpose
 			fmt.Printf("> %s %s............", t.InfoText, taskBannerPadding)
@@ -104,7 +107,7 @@ func Run() (err error) {
 					iprint.Errorf("\n")
 				}
 
-				failures = append(failures, t.InfoText)
+				failures = append(failures, fmt.Sprintf("%s :: %s", c.LanguageName, t.InfoText))
 
 				// Also need to reset the baseline status
 				git, err = igit.New()

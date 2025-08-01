@@ -33,10 +33,9 @@ build: clean
 xbuild: clean
 	@for target in \
 		darwin-amd64 \
+		darwin-arm64 \
 		linux-amd64 \
-		linux-arm \
 		linux-arm64 \
-		windows-amd64 \
 	; \
 	do \
 		GOOS=$$(echo "$${target}" | cut -d'-' -f1) ; \
