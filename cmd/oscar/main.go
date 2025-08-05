@@ -43,7 +43,7 @@ func init() {
 
 func main() {
 	if err := icli.NewRootCmd().Run(context.Background(), os.Args); err != nil {
-		// just exit, because all the errors were already logged
+		iprint.Errorf("running: %v\n", err)
 		os.Exit(1)
 	}
 }

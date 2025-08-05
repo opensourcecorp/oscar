@@ -74,10 +74,8 @@ func getVersion() string {
 func rootAction(_ context.Context, cmd *cli.Command) error {
 	maybeSetDebug(cmd)
 	iprint.Debugf("oscar root command\n")
-	msg := "\nERROR: oscar requires a subcommand"
 	_ = cli.ShowAppHelp(cmd)
-	iprint.Errorf("%s\n", msg)
-	return errors.New(msg)
+	return errors.New("\nERROR: oscar requires a subcommand")
 }
 
 func ciAction(_ context.Context, cmd *cli.Command) error {

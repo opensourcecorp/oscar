@@ -1,0 +1,271 @@
+package goci
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+
+	ciutil "github.com/opensourcecorp/oscar/internal/ci/util"
+	iprint "github.com/opensourcecorp/oscar/internal/print"
+)
+
+// A list of tasks that all implement [ciutil.Tasker], for Go.
+type (
+	baseInitTask     struct{}
+	goModCheckTask   struct{}
+	goFormatTask     struct{}
+	generateCodeTask struct{}
+	goBuildTask      struct{}
+	goVetTask        struct{}
+	staticcheckTask  struct{}
+	reviveTask       struct{}
+	errcheckTask     struct{}
+	goImportsTask    struct{}
+	govulncheckTask  struct{}
+	goTestTask       struct{}
+)
+
+var tasks = []ciutil.Tasker{
+	baseInitTask{},
+	goModCheckTask{},
+	goFormatTask{},
+	generateCodeTask{},
+	goBuildTask{},
+	goVetTask{},
+	staticcheckTask{},
+	reviveTask{},
+	errcheckTask{},
+	goImportsTask{},
+	govulncheckTask{},
+	goTestTask{},
+}
+
+// Tasks returns the list of CI tasks.
+func Tasks(repo ciutil.Repo) []ciutil.Tasker {
+	if repo.HasGo {
+		return tasks
+	}
+
+	return nil
+}
+
+// InfoText implements [ciutil.Tasker.InfoText].
+func (t baseInitTask) InfoText() string { return "" }
+
+// Init implements [ciutil.Tasker.Init].
+func (t baseInitTask) Init() error {
+	fmt.Println("- Go: Temporarily setting $PATH...")
+
+	// Adding the default GOPATH/bin is easier than trying to figure out a user's own custom
+	// settings
+	_ = os.Setenv(
+		"PATH",
+		fmt.Sprintf("%s:%s", filepath.Join(os.Getenv("HOME"), "go", "bin"), os.Getenv("PATH")),
+	)
+	iprint.Debugf("PATH after Go init: %s\n", os.Getenv("PATH"))
+
+	return nil
+}
+
+// Run implements [ciutil.Tasker.Run].
+func (t baseInitTask) Run() error { return nil }
+
+// InfoText implements [ciutil.Tasker.InfoText].
+func (t goModCheckTask) InfoText() string { return "go.mod tidy check" }
+
+// Init implements [ciutil.Tasker.Init].
+func (t goModCheckTask) Init() error { return nil }
+
+// Run implements [ciutil.Tasker.Run].
+func (t goModCheckTask) Run() error {
+	if err := ciutil.RunCommand([]string{"go", "mod", "tidy"}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// InfoText implements [ciutil.Tasker.InfoText].
+func (t goFormatTask) InfoText() string { return "Format" }
+
+// Init implements [ciutil.Tasker.Init].
+func (t goFormatTask) Init() error { return nil }
+
+// Run implements [ciutil.Tasker.Run].
+func (t goFormatTask) Run() error {
+	if err := ciutil.RunCommand([]string{"go", "fmt", "./..."}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// InfoText implements [ciutil.Tasker.InfoText].
+func (t generateCodeTask) InfoText() string { return "Generate code" }
+
+// Init implements [ciutil.Tasker.Init].
+func (t generateCodeTask) Init() error { return nil }
+
+// Run implements [ciutil.Tasker.Run].
+func (t generateCodeTask) Run() error {
+	if err := ciutil.RunCommand([]string{"go", "generate", "./..."}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// InfoText implements [ciutil.Tasker.InfoText].
+func (t goBuildTask) InfoText() string { return "Build" }
+
+// Init implements [ciutil.Tasker.Init].
+func (t goBuildTask) Init() error { return nil }
+
+// Run implements [ciutil.Tasker.Run].
+func (t goBuildTask) Run() error {
+	if err := ciutil.RunCommand([]string{"go", "build", "./..."}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// InfoText implements [ciutil.Tasker.InfoText].
+func (t goVetTask) InfoText() string { return "Vet" }
+
+// Init implements [ciutil.Tasker.Init].
+func (t goVetTask) Init() error { return nil }
+
+// Run implements [ciutil.Tasker.Run].
+func (t goVetTask) Run() error {
+	if err := ciutil.RunCommand([]string{"go", "vet", "./..."}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// InfoText implements [ciutil.Tasker.InfoText].
+func (t staticcheckTask) InfoText() string { return "Lint (staticcheck)" }
+
+// Init implements [ciutil.Tasker.Init].
+func (t staticcheckTask) Init() error {
+	if err := goInstall(staticcheck); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Run implements [ciutil.Tasker.Run].
+func (t staticcheckTask) Run() error {
+	args := []string{staticcheck.Name, "./..."}
+	if err := ciutil.RunCommand(args); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// InfoText implements [ciutil.Tasker.InfoText].
+func (t reviveTask) InfoText() string { return "Lint (revive)" }
+
+// Init implements [ciutil.Tasker.Init].
+func (t reviveTask) Init() error {
+	if err := goInstall(revive); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Run implements [ciutil.Tasker.Run].
+func (t reviveTask) Run() error {
+	args := []string{revive.Name, "--set_exit_status", "./..."}
+	if err := ciutil.RunCommand(args); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// InfoText implements [ciutil.Tasker.InfoText].
+func (t errcheckTask) InfoText() string { return "Lint (errcheck)" }
+
+// Init implements [ciutil.Tasker.Init].
+func (t errcheckTask) Init() error {
+	if err := goInstall(errcheck); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Run implements [ciutil.Tasker.Run].
+func (t errcheckTask) Run() error {
+	args := []string{errcheck.Name, "./..."}
+	if err := ciutil.RunCommand(args); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// InfoText implements [ciutil.Tasker.InfoText].
+func (t goImportsTask) InfoText() string { return "Format imports" }
+
+// Init implements [ciutil.Tasker.Init].
+func (t goImportsTask) Init() error {
+	if err := goInstall(goimports); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Run implements [ciutil.Tasker.Run].
+func (t goImportsTask) Run() error {
+	args := []string{goimports.Name, "-l", "-w", "."}
+	if err := ciutil.RunCommand(args); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// InfoText implements [ciutil.Tasker.InfoText].
+func (t govulncheckTask) InfoText() string { return "Vulnerability scan (govulncheck)" }
+
+// Init implements [ciutil.Tasker.Init].
+func (t govulncheckTask) Init() error {
+	if err := goInstall(govulncheck); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Run implements [ciutil.Tasker.Run].
+func (t govulncheckTask) Run() error {
+	args := []string{govulncheck.Name, "./..."}
+	if err := ciutil.RunCommand(args); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// InfoText implements [ciutil.Tasker.InfoText].
+func (t goTestTask) InfoText() string { return "Test" }
+
+// Init implements [ciutil.Tasker.Init].
+func (t goTestTask) Init() error { return nil }
+
+// Run implements [ciutil.Tasker.Run].
+func (t goTestTask) Run() error {
+	if err := ciutil.RunCommand([]string{"go", "test", "./..."}); err != nil {
+		return err
+	}
+
+	return nil
+}
