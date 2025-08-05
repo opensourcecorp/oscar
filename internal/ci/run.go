@@ -12,7 +12,8 @@ import (
 	iprint "github.com/opensourcecorp/oscar/internal/print"
 )
 
-// TODO:
+// TaskMap is a less-verbose type alias for mapping language names to function signatures that
+// return a language's tasks.
 type TaskMap map[string][]ciutil.Tasker
 
 // GetCITaskMap assembles the overall list of CI tasks, keyed by their language/tooling name
@@ -54,7 +55,7 @@ func Run() (err error) {
 	// types.
 	ciTaskMap, err := GetCITaskMap()
 	if err != nil {
-		return err
+		return fmt.Errorf("getting CI tasks: %w", err)
 	}
 
 	// Log padding setup
@@ -70,7 +71,7 @@ func Run() (err error) {
 
 	// Handle system init
 	if err := ciutil.InitSystem(); err != nil {
-		return err
+		return fmt.Errorf("initializing system: %w", err)
 	}
 
 	// Handle all other inits
@@ -78,11 +79,11 @@ func Run() (err error) {
 	for _, tasks := range ciTaskMap {
 		for _, t := range tasks {
 			if err := t.Init(); err != nil {
-				return err
+				return fmt.Errorf("running init for '%s': %w", t.InfoText(), err)
 			}
 		}
 	}
-	fmt.Printf("Done!\n\n")
+	fmt.Printf("Done with initialization!\n\n")
 
 	// For tracking any changes to Git status etc. after each Task runs
 	git, err := igit.New()
@@ -90,6 +91,7 @@ func Run() (err error) {
 		return fmt.Errorf("internal error: %w", err)
 	}
 
+	// Keeps track of all task failures
 	failures := make([]string, 0)
 	for lang, tasks := range ciTaskMap {
 		langNameBannerPadding := strings.Repeat("=", longestLanguageNameLength-len(lang)/2)
@@ -142,6 +144,10 @@ func Run() (err error) {
 				}
 			} else {
 				fmt.Printf("PASSED\n")
+			}
+			if err := t.Post(); err != nil {
+				iprint.Errorf("running task post-steps: %v\n", err)
+				failures = append(failures, fmt.Sprintf("%s :: %s", lang, t.InfoText()))
 			}
 		}
 	}

@@ -84,7 +84,7 @@ func ciAction(_ context.Context, cmd *cli.Command) error {
 	iprint.Debugf("oscar ci subcommand\n")
 
 	if err := ci.Run(); err != nil {
-		return err
+		return fmt.Errorf("running CI: %w", err)
 	}
 
 	return nil

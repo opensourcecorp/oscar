@@ -10,6 +10,7 @@ import (
 
 	ciutil "github.com/opensourcecorp/oscar/internal/ci/util"
 	"github.com/opensourcecorp/oscar/internal/consts"
+	iprint "github.com/opensourcecorp/oscar/internal/print"
 )
 
 type (
@@ -44,7 +45,13 @@ func (t baseInitTask) InfoText() string { return "" }
 
 // Init implements [ciutil.Tasker.Init].
 func (t baseInitTask) Init() error {
-	fmt.Println("- Python: Installing uv...")
+	defer fmt.Println("Done.")
+	fmt.Printf("- Python: Installing uv... ")
+
+	if ciutil.IsCommandUpToDate(uv) {
+		iprint.Debugf("'%s' found and was up-to-date (%s), skipping install\n", uv.Name, uv.Version)
+		return nil
+	}
 
 	var uvArch, uvOS, uvKernel string
 
@@ -105,6 +112,9 @@ func (t baseInitTask) Init() error {
 // Run implements [ciutil.Tasker.Run].
 func (t baseInitTask) Run() error { return nil }
 
+// Post implements [ciutil.Tasker.Post].
+func (t baseInitTask) Post() error { return nil }
+
 // InfoText implements [ciutil.Tasker.InfoText].
 func (t buildTask) InfoText() string { return "Build" }
 
@@ -119,6 +129,9 @@ func (t buildTask) Run() error {
 
 	return nil
 }
+
+// Post implements [ciutil.Tasker.Post].
+func (t buildTask) Post() error { return nil }
 
 // InfoText implements [ciutil.Tasker.InfoText].
 func (t ruffLintTask) InfoText() string { return "Lint (ruff)" }
@@ -136,6 +149,9 @@ func (t ruffLintTask) Run() error {
 	return nil
 }
 
+// Post implements [ciutil.Tasker.Post].
+func (t ruffLintTask) Post() error { return nil }
+
 // InfoText implements [ciutil.Tasker.InfoText].
 func (t ruffFormatTask) InfoText() string { return "Format (ruff)" }
 
@@ -151,6 +167,9 @@ func (t ruffFormatTask) Run() error {
 
 	return nil
 }
+
+// Post implements [ciutil.Tasker.Post].
+func (t ruffFormatTask) Post() error { return nil }
 
 // InfoText implements [ciutil.Tasker.InfoText].
 func (t pydoclintTask) InfoText() string { return "Lint (pydoclint)" }
@@ -168,6 +187,9 @@ func (t pydoclintTask) Run() error {
 	return nil
 }
 
+// Post implements [ciutil.Tasker.Post].
+func (t pydoclintTask) Post() error { return nil }
+
 // InfoText implements [ciutil.Tasker.InfoText].
 func (t mypyTask) InfoText() string { return "Type-check (mypy)" }
 
@@ -183,3 +205,6 @@ func (t mypyTask) Run() error {
 
 	return nil
 }
+
+// Post implements [ciutil.Tasker.Post].
+func (t mypyTask) Post() error { return nil }

@@ -40,7 +40,7 @@ func New() (*Git, error) {
 func (g *Git) Update() error {
 	status, err := getRawStatus()
 	if err != nil {
-		return err
+		return fmt.Errorf("getting Git status: %w", err)
 	}
 
 	untrackedFiles := make([]string, 0)
@@ -126,7 +126,7 @@ func (g *Git) updateStatus() error {
 
 	status, err := getRawStatus()
 	if err != nil {
-		return err
+		return fmt.Errorf("getting Git status: %w", err)
 	}
 
 	diff := make([]string, 0)

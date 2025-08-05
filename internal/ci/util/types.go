@@ -11,6 +11,7 @@ type Tasker interface {
 	Init() error
 	// Run should perform the actual task's actions.
 	Run() error
+	Post() error
 }
 
 // Repo stores information about the contents of the repository being ran against.
@@ -20,11 +21,13 @@ type Repo struct {
 	HasShell  bool
 }
 
-// TODO:
+// A VersionedTask is a helper struct used to help other types implementing [Tasker] pass around
+// their versioning/installation information.
 type VersionedTask struct {
-	Name       string
-	RemotePath string
-	Version    string
+	Name           string
+	RemotePath     string
+	Version        string
+	ConfigFilePath string
 }
 
 // String implements the [fmt.Stringer] interface.

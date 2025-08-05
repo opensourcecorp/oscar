@@ -2,21 +2,25 @@ package goci
 
 import (
 	"fmt"
-	"os/exec"
+	"os"
+	"path/filepath"
 
 	ciutil "github.com/opensourcecorp/oscar/internal/ci/util"
+	iprint "github.com/opensourcecorp/oscar/internal/print"
 )
 
 var (
 	staticcheck = ciutil.VersionedTask{
-		Name:       "staticcheck",
-		RemotePath: "honnef.co/go/tools/cmd/staticcheck",
-		Version:    "2025.1.1",
+		Name:           "staticcheck",
+		RemotePath:     "honnef.co/go/tools/cmd/staticcheck",
+		Version:        "2025.1.1",
+		ConfigFilePath: filepath.Join("./staticcheck.conf"),
 	}
 	revive = ciutil.VersionedTask{
-		Name:       "revive",
-		RemotePath: "github.com/mgechev/revive",
-		Version:    "v1.11.0",
+		Name:           "revive",
+		RemotePath:     "github.com/mgechev/revive",
+		Version:        "v1.11.0",
+		ConfigFilePath: filepath.Join(os.TempDir(), "revive.toml"),
 	}
 	errcheck = ciutil.VersionedTask{
 		Name:       "errcheck",
@@ -36,13 +40,15 @@ var (
 )
 
 // TODO:
-func goInstall(i ciutil.VersionedTask) error {
-	cmd := exec.Command("go", "install", fmt.Sprintf("%s@%s", i.RemotePath, i.Version))
-	if output, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf(
-			"running go install for '%s': %w -- output:\n%s",
-			i.Name, err, string(output),
-		)
+func goInstall(vt ciutil.VersionedTask) error {
+	if ciutil.IsCommandUpToDate(vt) {
+		iprint.Debugf("'%s' found and was up-to-date (%s), skipping install\n", vt.Name, vt.Version)
+		return nil
+	}
+
+	args := []string{"go", "install", fmt.Sprintf("%s@%s", vt.RemotePath, vt.Version)}
+	if err := ciutil.RunCommand(args); err != nil {
+		return fmt.Errorf("running go install: %w", err)
 	}
 
 	return nil

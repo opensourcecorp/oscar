@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	ciconfig "github.com/opensourcecorp/oscar/internal/ci/configfiles"
 	ciutil "github.com/opensourcecorp/oscar/internal/ci/util"
 	iprint "github.com/opensourcecorp/oscar/internal/print"
 )
@@ -54,7 +55,8 @@ func (t baseInitTask) InfoText() string { return "" }
 
 // Init implements [ciutil.Tasker.Init].
 func (t baseInitTask) Init() error {
-	fmt.Println("- Go: Temporarily setting $PATH...")
+	defer fmt.Println("Done.")
+	fmt.Printf("- Go: Temporarily setting $PATH... ")
 
 	// Adding the default GOPATH/bin is easier than trying to figure out a user's own custom
 	// settings
@@ -69,6 +71,9 @@ func (t baseInitTask) Init() error {
 
 // Run implements [ciutil.Tasker.Run].
 func (t baseInitTask) Run() error { return nil }
+
+// Post implements [ciutil.Tasker.Post].
+func (t baseInitTask) Post() error { return nil }
 
 // InfoText implements [ciutil.Tasker.InfoText].
 func (t goModCheckTask) InfoText() string { return "go.mod tidy check" }
@@ -85,6 +90,9 @@ func (t goModCheckTask) Run() error {
 	return nil
 }
 
+// Post implements [ciutil.Tasker.Post].
+func (t goModCheckTask) Post() error { return nil }
+
 // InfoText implements [ciutil.Tasker.InfoText].
 func (t goFormatTask) InfoText() string { return "Format" }
 
@@ -99,6 +107,9 @@ func (t goFormatTask) Run() error {
 
 	return nil
 }
+
+// Post implements [ciutil.Tasker.Post].
+func (t goFormatTask) Post() error { return nil }
 
 // InfoText implements [ciutil.Tasker.InfoText].
 func (t generateCodeTask) InfoText() string { return "Generate code" }
@@ -115,6 +126,9 @@ func (t generateCodeTask) Run() error {
 	return nil
 }
 
+// Post implements [ciutil.Tasker.Post].
+func (t generateCodeTask) Post() error { return nil }
+
 // InfoText implements [ciutil.Tasker.InfoText].
 func (t goBuildTask) InfoText() string { return "Build" }
 
@@ -129,6 +143,9 @@ func (t goBuildTask) Run() error {
 
 	return nil
 }
+
+// Post implements [ciutil.Tasker.Post].
+func (t goBuildTask) Post() error { return nil }
 
 // InfoText implements [ciutil.Tasker.InfoText].
 func (t goVetTask) InfoText() string { return "Vet" }
@@ -145,6 +162,9 @@ func (t goVetTask) Run() error {
 	return nil
 }
 
+// Post implements [ciutil.Tasker.Post].
+func (t goVetTask) Post() error { return nil }
+
 // InfoText implements [ciutil.Tasker.InfoText].
 func (t staticcheckTask) InfoText() string { return "Lint (staticcheck)" }
 
@@ -154,14 +174,32 @@ func (t staticcheckTask) Init() error {
 		return err
 	}
 
+	cfgFileContents, err := ciconfig.Files.ReadFile(filepath.Base(staticcheck.ConfigFilePath))
+	if err != nil {
+		return fmt.Errorf("reading embedded file contents: %w", err)
+	}
+
+	if err := os.WriteFile(staticcheck.ConfigFilePath, cfgFileContents, 0644); err != nil {
+		return fmt.Errorf("writing config file: %w", err)
+	}
+
 	return nil
 }
 
 // Run implements [ciutil.Tasker.Run].
-func (t staticcheckTask) Run() error {
+func (t staticcheckTask) Run() (err error) {
 	args := []string{staticcheck.Name, "./..."}
 	if err := ciutil.RunCommand(args); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+// Post implements [ciutil.Tasker.Post].
+func (t staticcheckTask) Post() error {
+	if err := os.RemoveAll(staticcheck.ConfigFilePath); err != nil {
+		return fmt.Errorf("removing config file: %w", err)
 	}
 
 	return nil
@@ -176,14 +214,37 @@ func (t reviveTask) Init() error {
 		return err
 	}
 
+	cfgFileContents, err := ciconfig.Files.ReadFile(filepath.Base(revive.ConfigFilePath))
+	if err != nil {
+		return fmt.Errorf("reading embedded file contents: %w", err)
+	}
+
+	if err := os.WriteFile(revive.ConfigFilePath, cfgFileContents, 0644); err != nil {
+		return fmt.Errorf("writing config file: %w", err)
+	}
+
 	return nil
 }
 
 // Run implements [ciutil.Tasker.Run].
 func (t reviveTask) Run() error {
-	args := []string{revive.Name, "--set_exit_status", "./..."}
+	args := []string{
+		revive.Name,
+		"--config", revive.ConfigFilePath,
+		"--set_exit_status",
+		"./...",
+	}
 	if err := ciutil.RunCommand(args); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+// Post implements [ciutil.Tasker.Post].
+func (t reviveTask) Post() error {
+	if err := os.RemoveAll(revive.ConfigFilePath); err != nil {
+		return fmt.Errorf("removing config file: %w", err)
 	}
 
 	return nil
@@ -211,6 +272,9 @@ func (t errcheckTask) Run() error {
 	return nil
 }
 
+// Post implements [ciutil.Tasker.Post].
+func (t errcheckTask) Post() error { return nil }
+
 // InfoText implements [ciutil.Tasker.InfoText].
 func (t goImportsTask) InfoText() string { return "Format imports" }
 
@@ -232,6 +296,9 @@ func (t goImportsTask) Run() error {
 
 	return nil
 }
+
+// Post implements [ciutil.Tasker.Post].
+func (t goImportsTask) Post() error { return nil }
 
 // InfoText implements [ciutil.Tasker.InfoText].
 func (t govulncheckTask) InfoText() string { return "Vulnerability scan (govulncheck)" }
@@ -255,6 +322,9 @@ func (t govulncheckTask) Run() error {
 	return nil
 }
 
+// Post implements [ciutil.Tasker.Post].
+func (t govulncheckTask) Post() error { return nil }
+
 // InfoText implements [ciutil.Tasker.InfoText].
 func (t goTestTask) InfoText() string { return "Test" }
 
@@ -269,3 +339,6 @@ func (t goTestTask) Run() error {
 
 	return nil
 }
+
+// Post implements [ciutil.Tasker.Post].
+func (t goTestTask) Post() error { return nil }

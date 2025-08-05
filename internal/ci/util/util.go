@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
+	"regexp"
 	"strings"
 
 	iprint "github.com/opensourcecorp/oscar/internal/print"
@@ -60,32 +61,40 @@ func filesExistInTree(globstar string) (bool, error) {
 	return true, nil
 }
 
-// func IsCommandVersionOK(t Tasker) bool {
-// 	commandVersionOK := true
+// IsCommandUpToDate checks whether or not a provided [VersionedTask]'s command is installed, and
+// up-to-date on the system. This is used to facilitate skipping unecessary installs, etc.
+func IsCommandUpToDate(vt VersionedTask) bool {
+	commandUpToDate := true
 
-// 	versionCheckArg := "--version"
-// 	if t.CommandVersionCheckArg != "" {
-// 		versionCheckArg = t.CommandVersionCheckArg
-// 	}
+	version := strings.TrimPrefix(vt.Version, "v")
+	re := regexp.MustCompile(version)
 
-// 	cmd := exec.Command(t.CommandName, versionCheckArg)
-// 	outputRaw, err := cmd.CombinedOutput()
-// 	output := string(outputRaw)
-// 	if err != nil || !strings.Contains(output, t.CommandVersion) {
-// 		commandVersionOK = false
-// 		if err != nil {
-// 			iprint.Debugf("%s possibly not found -- will install\n", t.CommandName)
-// 		} else if !strings.Contains(output, t.CommandVersion) {
-// 			iprint.Debugf(
-// 				"%s version was '%s', but wanted '%s' -- will upgrade for oscar usage\n",
-// 				t.CommandName, output, t.CommandVersion,
-// 			)
-// 		}
-// 	}
+	// TODO: revisit how reliable this is for everything
+	versionCheckArg := "--version"
 
-// 	return commandVersionOK
-// }
+	cmd := exec.Command(vt.Name, versionCheckArg)
+	outputRaw, err := cmd.CombinedOutput()
+	output := string(outputRaw)
+	output = strings.Join(strings.Split(output, "\n"), " ")
+	if err != nil || !re.MatchString(output) {
+		commandUpToDate = false
+		if err != nil {
+			iprint.Debugf(
+				"'%s' possibly not found, or does not have a consistent version flag (error output: %s) -- will install\n",
+				vt.Name, output,
+			)
+		} else if !re.MatchString(output) {
+			iprint.Debugf(
+				"'%s' version output was '%s', but wanted '%s' -- will upgrade for oscar usage\n",
+				vt.Name, output, version,
+			)
+		}
+	}
 
+	return commandUpToDate
+}
+
+// GetRepoComposition returns a populated [Repo].
 func GetRepoComposition() (Repo, error) {
 	var errs error
 
