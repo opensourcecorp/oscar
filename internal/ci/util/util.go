@@ -91,6 +91,10 @@ func IsCommandUpToDate(vt VersionedTask) bool {
 		}
 	}
 
+	if commandUpToDate {
+		iprint.Debugf("'%s' found and was up-to-date (version %s)\n", vt.Name, vt.Version)
+	}
+
 	return commandUpToDate
 }
 

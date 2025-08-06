@@ -10,7 +10,6 @@ import (
 
 	ciutil "github.com/opensourcecorp/oscar/internal/ci/util"
 	"github.com/opensourcecorp/oscar/internal/consts"
-	iprint "github.com/opensourcecorp/oscar/internal/print"
 )
 
 type (
@@ -49,7 +48,6 @@ func (t baseInitTask) Init() error {
 	fmt.Printf("- Python: Installing uv... ")
 
 	if ciutil.IsCommandUpToDate(uv) {
-		iprint.Debugf("'%s' found and was up-to-date (%s), skipping install\n", uv.Name, uv.Version)
 		return nil
 	}
 
@@ -76,33 +74,33 @@ func (t baseInitTask) Init() error {
 	}
 
 	// This will also be the name of the directory once extracted from the archive
-	uvReleaseURL := fmt.Sprintf(
+	releaseURL := fmt.Sprintf(
 		uv.RemotePath,
 		uv.Version, uvArch, uvOS, uvKernel,
 	)
 
 	// Grab the last element of the download URL (minus the extension) to get the unpacked archive
 	// directory name
-	urlSplit := strings.Split(uvReleaseURL, "/")
-	uvArchiveName := strings.ReplaceAll(urlSplit[len(urlSplit)-1], ".tar.gz", "")
+	urlSplit := strings.Split(releaseURL, "/")
+	archiveName := strings.ReplaceAll(urlSplit[len(urlSplit)-1], ".tar.gz", "")
 
-	uvDownloadedFile := filepath.Join(os.TempDir(), "uv.tar.gz")
+	downloadedFile := filepath.Join(os.TempDir(), "uv.tar.gz")
 
 	// NOTE: yes, I know, but this is WAY easier than doing a whole Go song & dance with downloading
 	// & unpacking a targz archive. System deps are called out in the README, don't @ me.
-	installUVCmd := []string{"bash", "-c",
+	installCmd := []string{"bash", "-c",
 		fmt.Sprintf(`
 					curl -fsSL -o %s %s
 					tar -C %s -xzf %s
 					mv %s/%s/{uv,uvx} %s/
 				`,
-			uvDownloadedFile, uvReleaseURL,
-			os.TempDir(), uvDownloadedFile,
-			os.TempDir(), uvArchiveName, consts.OscarHomeBin,
+			downloadedFile, releaseURL,
+			os.TempDir(), downloadedFile,
+			os.TempDir(), archiveName, consts.OscarHomeBin,
 		),
 	}
 
-	if err := ciutil.RunCommand(installUVCmd); err != nil {
+	if err := ciutil.RunCommand(installCmd); err != nil {
 		return err
 	}
 

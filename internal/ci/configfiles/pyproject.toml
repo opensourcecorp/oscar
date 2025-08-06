@@ -1,0 +1,49 @@
+[project]
+name = "test-package"
+version = "1.0.0"
+description = "Python package used for testing oscar"
+readme = "README.md"
+requires-python = ">=3.12.0"
+# See: https://packaging.python.org/en/latest/specifications/version-specifiers/#examples
+dependencies = []
+
+[dependency-groups]
+dev = []
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+# Allows for `pip install`s of the package, in case it has a GitHub dependency
+allow-direct-references = true
+
+# mypy does type-checking
+[tool.mypy]
+# Don't fail on imported packages that themselves don't have type stubs
+ignore_missing_imports = true
+exclude = []
+
+# pydoclint lints docstrings.
+# Configuration options: https://jsh9.github.io/pydoclint/config_options.html
+[tool.pydoclint]
+style = "numpy"
+check-style-mismatch = true
+skip-checking-short-docstrings = false
+ignore-underscore-args = false
+should-document-private-class-attributes = true
+
+# ruff does linting & formatting
+[tool.ruff]
+fix = true
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+  "E",   # pycodestyle errors
+  "W",   # pycodestyle warnings
+  "F",   # pyflakes
+  "I",   # import sorting
+  "RUF", # ruff-specific rules
+]
+exclude = []

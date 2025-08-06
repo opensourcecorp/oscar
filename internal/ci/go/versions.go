@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 
 	ciutil "github.com/opensourcecorp/oscar/internal/ci/util"
-	iprint "github.com/opensourcecorp/oscar/internal/print"
 )
 
 var (
@@ -39,10 +38,10 @@ var (
 	}
 )
 
-// TODO:
+// goInstall is a wrapper to run "go install" against a Go tool used for a given Task. It checks
+// that the tool is up-to-date before installing.
 func goInstall(vt ciutil.VersionedTask) error {
 	if ciutil.IsCommandUpToDate(vt) {
-		iprint.Debugf("'%s' found and was up-to-date (%s), skipping install\n", vt.Name, vt.Version)
 		return nil
 	}
 

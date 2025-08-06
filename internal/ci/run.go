@@ -7,6 +7,7 @@ import (
 
 	goci "github.com/opensourcecorp/oscar/internal/ci/go"
 	pythonci "github.com/opensourcecorp/oscar/internal/ci/python"
+	shellci "github.com/opensourcecorp/oscar/internal/ci/shell"
 	ciutil "github.com/opensourcecorp/oscar/internal/ci/util"
 	igit "github.com/opensourcecorp/oscar/internal/git"
 	iprint "github.com/opensourcecorp/oscar/internal/print"
@@ -27,7 +28,7 @@ func GetCITaskMap() (TaskMap, error) {
 	for langName, getTasksFunc := range map[string]func(ciutil.Repo) []ciutil.Tasker{
 		"Go":     goci.Tasks,
 		"Python": pythonci.Tasks,
-		// "Shell": shellci.Tasks,
+		"Shell":  shellci.Tasks,
 	} {
 		tasks := getTasksFunc(repo)
 		if len(tasks) > 0 {
