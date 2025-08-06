@@ -23,4 +23,10 @@ var (
 		RemotePath: "https://github.com/mvdan/sh/releases/download/%s/shfmt_%s_%s_%s",
 		Version:    "v3.12.0",
 	}
+	bats = ciutil.VersionedTask{
+		Name: "bats",
+		// NOTE: bats just gets cloned then installed with its install script
+		RemotePath: "https://github.com/bats-core/bats-core.git",
+		Version:    "v1.12.0",
+	}
 )

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"slices"
 	"strings"
 
@@ -51,32 +50,24 @@ func (t baseInitTask) Init() error {
 		return nil
 	}
 
-	var uvArch, uvOS, uvKernel string
-
-	switch runtime.GOARCH {
-	case "amd64":
-		uvArch = "x86_64"
-	case "arm64":
-		uvArch = "aarch64"
-	default:
-		return fmt.Errorf("unsupported CPU architecture '%s'", runtime.GOARCH)
+	hostInput := ciutil.HostInfoInput{
+		OSLinux:     "unknown",
+		KernelLinux: "linux-gnu",
+		OSMacOS:     "apple",
+		KernelMacOS: "darwin",
+		ArchAMD64:   "x86_64",
+		ArchARM64:   "aarch64",
 	}
 
-	switch runtime.GOOS {
-	case "darwin":
-		uvOS = "apple"
-		uvKernel = "darwin"
-	case "linux":
-		uvOS = "unknown"
-		uvKernel = "linux-gnu"
-	default:
-		return fmt.Errorf("unsupported operating system '%s'", runtime.GOOS)
+	host, err := ciutil.GetHostInfo(hostInput)
+	if err != nil {
+		return fmt.Errorf("getting host info during init: %w", err)
 	}
 
 	// This will also be the name of the directory once extracted from the archive
 	releaseURL := fmt.Sprintf(
 		uv.RemotePath,
-		uv.Version, uvArch, uvOS, uvKernel,
+		uv.Version, host.Arch, host.OS, host.Kernel,
 	)
 
 	// Grab the last element of the download URL (minus the extension) to get the unpacked archive

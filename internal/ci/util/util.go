@@ -48,19 +48,6 @@ func RunCommand(cmdArgs []string) error {
 	return nil
 }
 
-func filesExistInTree(globstar string) (bool, error) {
-	cmd := exec.Command("bash", "-c", fmt.Sprintf("shopt -s globstar && ls %s", globstar))
-	if output, err := cmd.CombinedOutput(); err != nil {
-		// If no files found, that's fine, just report it
-		if strings.Contains(string(output), "No such file or directory") {
-			return false, nil
-		}
-		return false, fmt.Errorf("finding files by globstar: %w -- output:\n%s", err, string(output))
-	}
-
-	return true, nil
-}
-
 // IsCommandUpToDate checks whether or not a provided [VersionedTask]'s command is installed, and
 // up-to-date on the system. This is used to facilitate skipping unecessary installs, etc.
 func IsCommandUpToDate(vt VersionedTask) bool {
@@ -102,15 +89,22 @@ func IsCommandUpToDate(vt VersionedTask) bool {
 func GetRepoComposition() (Repo, error) {
 	var errs error
 
-	hasGo, err := filesExistInTree("**/*.go")
+	hasGo, err := filesExistInTree(`ls **/*.go`)
 	if err != nil {
 		errs = errors.Join(errs, err)
 	}
-	hasPython, err := filesExistInTree("**/*.py*")
+	hasPython, err := filesExistInTree(`ls **/*.py*`)
 	if err != nil {
 		errs = errors.Join(errs, err)
 	}
-	hasShell, err := filesExistInTree("**/*.*sh")
+	hasShell, err := filesExistInTree(`
+		# DO NOT discover shell files for oscar itself -- this will make oscar's own CI recurse
+		# infinitely
+		# TODO: find a way to get around that limitation for oscar's own testing
+		if [[ ! $(git remote get-url origin) =~ opensourcecorp/oscar ]] ; then
+			find . -type f -name '*.*sh' -or -name '*.bats'
+		fi
+	`)
 	if err != nil {
 		errs = errors.Join(errs, err)
 	}
@@ -127,4 +121,25 @@ func GetRepoComposition() (Repo, error) {
 	iprint.Debugf("repo composition: %+v\n", repo)
 
 	return repo, nil
+}
+
+func filesExistInTree(findScript string) (bool, error) {
+	cmd := exec.Command("bash", "-c", fmt.Sprintf(`
+		shopt -s globstar
+		%s
+	`, findScript))
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		// If no files found, that's fine, just report it
+		if strings.Contains(string(output), "No such file or directory") {
+			return false, nil
+		}
+		return false, fmt.Errorf("finding files: %w -- output:\n%s", err, string(output))
+	}
+
+	if string(output) == "" {
+		return false, nil
+	}
+
+	return true, nil
 }

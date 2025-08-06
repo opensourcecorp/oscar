@@ -28,7 +28,9 @@ func GetCITaskMap() (TaskMap, error) {
 	for langName, getTasksFunc := range map[string]func(ciutil.Repo) []ciutil.Tasker{
 		"Go":     goci.Tasks,
 		"Python": pythonci.Tasks,
-		"Shell":  shellci.Tasks,
+		// "NodeJS":   nodejsci.Tasks,
+		"Shell": shellci.Tasks,
+		// "Markdown": markdownci.Tasks,
 	} {
 		tasks := getTasksFunc(repo)
 		if len(tasks) > 0 {

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 
 	ciutil "github.com/opensourcecorp/oscar/internal/ci/util"
 	"github.com/opensourcecorp/oscar/internal/consts"
@@ -13,11 +12,13 @@ import (
 type (
 	shellcheckTask struct{}
 	shfmtTask      struct{}
+	batsTask       struct{}
 )
 
 var tasks = []ciutil.Tasker{
 	shellcheckTask{},
 	shfmtTask{},
+	batsTask{},
 }
 
 // Tasks returns the list of CI tasks.
@@ -41,30 +42,22 @@ func (t shellcheckTask) Init() error {
 		return nil
 	}
 
-	var shellcheckArch, shellcheckKernel string
-
-	switch runtime.GOARCH {
-	case "amd64":
-		shellcheckArch = "x86_64"
-	case "arm64":
-		shellcheckArch = "aarch64"
-	default:
-		return fmt.Errorf("unsupported CPU architecture '%s'", runtime.GOARCH)
+	hostInput := ciutil.HostInfoInput{
+		KernelLinux: "linux",
+		KernelMacOS: "darwin",
+		ArchAMD64:   "x86_64",
+		ArchARM64:   "aarch64",
 	}
 
-	switch runtime.GOOS {
-	case "darwin":
-		shellcheckKernel = "darwin"
-	case "linux":
-		shellcheckKernel = "linux"
-	default:
-		return fmt.Errorf("unsupported operating system/kernel '%s'", runtime.GOOS)
+	host, err := ciutil.GetHostInfo(hostInput)
+	if err != nil {
+		return fmt.Errorf("getting host info during init: %w", err)
 	}
 
 	// This will also be the name of the directory once extracted from the archive
 	releaseURL := fmt.Sprintf(
 		shellcheck.RemotePath,
-		shellcheckKernel, shellcheckArch,
+		host.Kernel, host.Arch,
 	)
 
 	downloadedFile := filepath.Join(os.TempDir(), "shellcheck.tar.xz")
@@ -91,7 +84,11 @@ func (t shellcheckTask) Init() error {
 }
 
 func (t shellcheckTask) Run() error {
-	args := []string{"bash", "-c", "shopt -s globstar && shellcheck **/*.sh"}
+	args := []string{"bash", "-c", fmt.Sprintf(`
+		shopt -s globstar
+		ls **/*.sh || exit 0
+		%s **/*.sh
+	`, shellcheck.Name)}
 	if err := ciutil.RunCommand(args); err != nil {
 		return err
 	}
@@ -114,30 +111,22 @@ func (t shfmtTask) Init() error {
 		return nil
 	}
 
-	var shfmtArch, shfmtKernel string
-
-	switch runtime.GOARCH {
-	case "amd64":
-		shfmtArch = "amd64"
-	case "arm64":
-		shfmtArch = "arm64"
-	default:
-		return fmt.Errorf("unsupported CPU architecture '%s'", runtime.GOARCH)
+	hostInput := ciutil.HostInfoInput{
+		KernelLinux: "linux-gnu",
+		KernelMacOS: "darwin",
+		ArchAMD64:   "amd64",
+		ArchARM64:   "arm64",
 	}
 
-	switch runtime.GOOS {
-	case "darwin":
-		shfmtKernel = "darwin"
-	case "linux":
-		shfmtKernel = "linux"
-	default:
-		return fmt.Errorf("unsupported operating system/kernel '%s'", runtime.GOOS)
+	host, err := ciutil.GetHostInfo(hostInput)
+	if err != nil {
+		return fmt.Errorf("getting host info during init: %w", err)
 	}
 
 	// This will also be the name of the directory once extracted from the archive
 	releaseURL := fmt.Sprintf(
 		shfmt.RemotePath,
-		shfmt.Version, shfmt.Version, shfmtKernel, shfmtArch,
+		shfmt.Version, shfmt.Version, host.Kernel, host.Arch,
 	)
 
 	downloadedFile := filepath.Join(consts.OscarHomeBin, "shfmt")
@@ -162,7 +151,11 @@ func (t shfmtTask) Init() error {
 }
 
 func (t shfmtTask) Run() error {
-	args := []string{"bash", "-c", "shopt -s globstar && shfmt **/*.sh"}
+	args := []string{"bash", "-c", fmt.Sprintf(`
+		shopt -s globstar
+		ls **/*.sh || exit 0
+		%s **/*.sh
+	`, shfmt.Name)}
 	if err := ciutil.RunCommand(args); err != nil {
 		return err
 	}
@@ -172,3 +165,55 @@ func (t shfmtTask) Run() error {
 
 // Post implements [ciutil.Tasker.Post].
 func (t shfmtTask) Post() error { return nil }
+
+// InfoText implements [ciutil.Tasker.InfoText].
+func (t batsTask) InfoText() string { return "Test (bats)" }
+
+// Init implements [ciutil.Tasker.Init].
+func (t batsTask) Init() error {
+	defer fmt.Println("Done.")
+	fmt.Printf("- Shell: Installing bats... ")
+
+	if ciutil.IsCommandUpToDate(bats) {
+		return nil
+	}
+
+	clonePath := filepath.Join(os.TempDir(), "bats")
+
+	// NOTE: yes, I know, but this is WAY easier than doing a whole Go song & dance with downloading
+	// & unpacking a targz archive. System deps are called out in the README, don't @ me.
+	installCmd := []string{"bash", "-c",
+		fmt.Sprintf(`
+			git clone %s %s
+			git -C %s checkout %s
+			bash %s/install.sh %s
+		`,
+			bats.RemotePath, clonePath,
+			clonePath, bats.Version,
+			clonePath, consts.OscarHome,
+		),
+	}
+
+	if err := ciutil.RunCommand(installCmd); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (t batsTask) Run() error {
+	args := []string{"bash", "-c", fmt.Sprintf(`
+		shopt -s globstar
+		# Don't run if no bats files found, otherwise it will error out
+		ls **/*.bats || exit 0
+		%s **/*.bats
+	`, bats.Name)}
+	if err := ciutil.RunCommand(args); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Post implements [ciutil.Tasker.Post].
+func (t batsTask) Post() error { return nil }

@@ -14,6 +14,11 @@ dev = []
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+# TODO: this *shouldn't* be needed (I have other projects structured the same that don't need it),
+# but for some reason `uv build` freaks out without it
+[tool.hatch.build.targets.wheel]
+packages = ["src/foo"]
+
 [tool.hatch.metadata]
 # Allows for `pip install`s of the package, in case it has a GitHub dependency
 allow-direct-references = true
