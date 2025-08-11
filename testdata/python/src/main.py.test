@@ -1,0 +1,26 @@
+import os
+
+
+def get_homedir(msg: str) -> str:
+    """Returns the user's home directory.
+
+    Parameters
+    ----------
+    msg : str
+        A mostly-unused parameter, which only exists to test the docstring linter.
+
+    Returns
+    -------
+    str
+        The user's home directory.
+    """
+    print(msg)
+    return os.getenv("HOME", "not found")
+
+
+def main() -> None:
+    print(get_homedir("getting homedir"))
+
+
+if __name__ == "__main__":
+    main()

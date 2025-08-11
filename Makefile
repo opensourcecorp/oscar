@@ -21,14 +21,16 @@ test: ci
 
 ci-container:
 	@docker build \
+		--build-arg http_proxy="$${http_proxy}" \
+		--build-arg https_proxy="$${https_proxy}" \
 		--build-arg GO_VERSION="$$(awk '/^go/ { print $$2 }' go.mod)" \
-		--build-arg CI=true \
-		-f ./Containerfile -t $(BINNAME)-test:latest \
+		-f ./Containerfile \
+		-t $(BINNAME)-test:latest \
 		.
 
 build: clean
 	@mkdir -p ./build/$$(go env GOOS)-$$(go env GOARCH)
-	@go build -o ./build/$$(go env GOOS)-$$(go env GOARCH)/$(BINNAME) $(BINPATH)
+	@go build -o ./build/$(BINNAME) $(BINPATH)
 
 xbuild: clean
 	@for target in \
@@ -57,18 +59,19 @@ package: xbuild
 clean:
 	@rm -rf \
 		/tmp/$(BINNAME)-tests \
-		*cache* \
-		.*cache* \
-		*.log \
-		build/ \
-		dist/ \
-		$(BINNAME) \
-		./main
+		./*cache* \
+		./.*cache* \
+		./*.log \
+		./build/ \
+		./dist/ \
+		./$(BINNAME) \
+		./main \
+		./oscar/
 
 build-image: clean
-	@$(DOCKER) build \
-		--progress plain \
-		--build-arg GO_VERSION="$$(awk '/^go/ { print $$2 }' go.mod)" \
-		-f Containerfile \
-		-t $(OCI_REGISTRY)/$(OCI_REGISTRY_OWNER)/$(BINNAME):latest \
-		.
+	@export BUILDKIT_PROGRESS=plain && \
+	export GO_VERSION="$$(awk '/^go/ { print $$2 }' go.mod)" && \
+	$(DOCKER) compose build
+
+run-image:
+	@$(DOCKER) compose run oscar

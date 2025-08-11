@@ -38,7 +38,7 @@ func (t shellcheckTask) Init() error {
 	defer fmt.Println("Done.")
 	fmt.Printf("- Shell: Installing shellcheck... ")
 
-	if ciutil.IsCommandUpToDate(shellcheck) {
+	if ciutil.IsToolUpToDate(shellcheck) {
 		return nil
 	}
 
@@ -62,17 +62,15 @@ func (t shellcheckTask) Init() error {
 
 	downloadedFile := filepath.Join(os.TempDir(), "shellcheck.tar.xz")
 
-	// NOTE: yes, I know, but this is WAY easier than doing a whole Go song & dance with downloading
-	// & unpacking a targz archive. System deps are called out in the README, don't @ me.
 	installCmd := []string{"bash", "-c",
 		fmt.Sprintf(`
-					curl -fsSL -o %s %s
-					tar -C %s -xf %s
-					mv %s/shellcheck-%s/shellcheck %s/
-				`,
+				curl -fsSL -o %s %s
+				tar -C %s -xf %s
+				mv %s/shellcheck-*/shellcheck %s/
+			`,
 			downloadedFile, releaseURL,
 			os.TempDir(), downloadedFile,
-			os.TempDir(), shellcheck.Version, consts.OscarHomeBin,
+			os.TempDir(), consts.OscarHomeBin,
 		),
 	}
 
@@ -107,12 +105,12 @@ func (t shfmtTask) Init() error {
 	defer fmt.Println("Done.")
 	fmt.Printf("- Shell: Installing shfmt... ")
 
-	if ciutil.IsCommandUpToDate(shfmt) {
+	if ciutil.IsToolUpToDate(shfmt) {
 		return nil
 	}
 
 	hostInput := ciutil.HostInfoInput{
-		KernelLinux: "linux-gnu",
+		KernelLinux: "linux",
 		KernelMacOS: "darwin",
 		ArchAMD64:   "amd64",
 		ArchARM64:   "arm64",
@@ -131,8 +129,6 @@ func (t shfmtTask) Init() error {
 
 	downloadedFile := filepath.Join(consts.OscarHomeBin, "shfmt")
 
-	// NOTE: yes, I know, but this is WAY easier than doing a whole Go song & dance with downloading
-	// & unpacking a targz archive. System deps are called out in the README, don't @ me.
 	installCmd := []string{"bash", "-c",
 		fmt.Sprintf(`
 			curl -fsSL -o %s %s
@@ -174,20 +170,18 @@ func (t batsTask) Init() error {
 	defer fmt.Println("Done.")
 	fmt.Printf("- Shell: Installing bats... ")
 
-	if ciutil.IsCommandUpToDate(bats) {
+	if ciutil.IsToolUpToDate(bats) {
 		return nil
 	}
 
 	clonePath := filepath.Join(os.TempDir(), "bats")
 
-	// NOTE: yes, I know, but this is WAY easier than doing a whole Go song & dance with downloading
-	// & unpacking a targz archive. System deps are called out in the README, don't @ me.
 	installCmd := []string{"bash", "-c",
 		fmt.Sprintf(`
-			git clone %s %s
-			git -C %s checkout %s
-			bash %s/install.sh %s
-		`,
+				git clone %s %s
+				git -C %s checkout %s
+				bash %s/install.sh %s
+			`,
 			bats.RemotePath, clonePath,
 			clonePath, bats.Version,
 			clonePath, consts.OscarHome,

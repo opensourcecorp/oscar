@@ -7,6 +7,7 @@ import (
 
 	ciconfig "github.com/opensourcecorp/oscar/internal/ci/configfiles"
 	ciutil "github.com/opensourcecorp/oscar/internal/ci/util"
+	"github.com/opensourcecorp/oscar/internal/consts"
 	iprint "github.com/opensourcecorp/oscar/internal/print"
 )
 
@@ -56,15 +57,68 @@ func (t baseInitTask) InfoText() string { return "" }
 // Init implements [ciutil.Tasker.Init].
 func (t baseInitTask) Init() error {
 	defer fmt.Println("Done.")
-	fmt.Printf("- Go: Temporarily setting $PATH... ")
+	fmt.Printf("- Go: Installing Go... ")
 
-	// Adding the default GOPATH/bin is easier than trying to figure out a user's own custom
-	// settings
-	_ = os.Setenv(
-		"PATH",
-		fmt.Sprintf("%s:%s", filepath.Join(os.Getenv("HOME"), "go", "bin"), os.Getenv("PATH")),
-	)
+	goPath := filepath.Join(consts.OscarHome, "go")
+	goBinPath := filepath.Join(goPath, "bin")
+
+	// Set the GOPATH
+	if err := os.Setenv("GOPATH", goPath); err != nil {
+		return fmt.Errorf("setting GOPATH: %w", err)
+	}
+
+	// Add the implicit GOBIN to $PATH
+	if err := os.Setenv("PATH", fmt.Sprintf("%s:%s", goBinPath, os.Getenv("PATH"))); err != nil {
+		return fmt.Errorf("updating PATH for Go: %w", err)
+	}
 	iprint.Debugf("PATH after Go init: %s\n", os.Getenv("PATH"))
+
+	if err := os.MkdirAll(goPath, 0755); err != nil {
+		return fmt.Errorf("creating GOPATH: %w", err)
+	}
+
+	// Now, install Go itself
+	if ciutil.IsToolUpToDate(goAsTask) {
+		return nil
+	}
+
+	hostInput := ciutil.HostInfoInput{
+		KernelLinux: "linux",
+		KernelMacOS: "darwin",
+		ArchAMD64:   "amd64",
+		ArchARM64:   "arm64",
+	}
+
+	host, err := ciutil.GetHostInfo(hostInput)
+	if err != nil {
+		return fmt.Errorf("getting host info during init: %w", err)
+	}
+
+	releaseURL := fmt.Sprintf(
+		goAsTask.RemotePath,
+		goAsTask.Version, host.Kernel, host.Arch,
+	)
+
+	downloadDir := filepath.Join(os.TempDir(), "go")
+	downloadedFile := filepath.Join(downloadDir, "go.tar.gz")
+
+	installCmd := []string{"bash", "-c",
+		fmt.Sprintf(`
+			mkdir -p %s
+			curl -fsSL -o %s %s
+			rm -rf %s
+			tar -C %s -xf %s
+		`,
+			downloadDir,
+			downloadedFile, releaseURL,
+			goPath,
+			consts.OscarHome, downloadedFile,
+		),
+	}
+
+	if err := ciutil.RunCommand(installCmd); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -170,6 +224,9 @@ func (t staticcheckTask) InfoText() string { return "Lint (staticcheck)" }
 
 // Init implements [ciutil.Tasker.Init].
 func (t staticcheckTask) Init() error {
+	defer fmt.Println("Done.")
+	fmt.Printf("- Go: Installing staticcheck... ")
+
 	if err := goInstall(staticcheck); err != nil {
 		return err
 	}
@@ -210,6 +267,9 @@ func (t reviveTask) InfoText() string { return "Lint (revive)" }
 
 // Init implements [ciutil.Tasker.Init].
 func (t reviveTask) Init() error {
+	defer fmt.Println("Done.")
+	fmt.Printf("- Go: Installing revive... ")
+
 	if err := goInstall(revive); err != nil {
 		return err
 	}
@@ -255,6 +315,9 @@ func (t errcheckTask) InfoText() string { return "Lint (errcheck)" }
 
 // Init implements [ciutil.Tasker.Init].
 func (t errcheckTask) Init() error {
+	defer fmt.Println("Done.")
+	fmt.Printf("- Go: Installing errcheck... ")
+
 	if err := goInstall(errcheck); err != nil {
 		return err
 	}
@@ -280,6 +343,9 @@ func (t goImportsTask) InfoText() string { return "Format imports" }
 
 // Init implements [ciutil.Tasker.Init].
 func (t goImportsTask) Init() error {
+	defer fmt.Println("Done.")
+	fmt.Printf("- Go: Installing goimports... ")
+
 	if err := goInstall(goimports); err != nil {
 		return err
 	}
@@ -305,6 +371,9 @@ func (t govulncheckTask) InfoText() string { return "Vulnerability scan (govulnc
 
 // Init implements [ciutil.Tasker.Init].
 func (t govulncheckTask) Init() error {
+	defer fmt.Println("Done.")
+	fmt.Printf("- Go: Installing govulncheck... ")
+
 	if err := goInstall(govulncheck); err != nil {
 		return err
 	}

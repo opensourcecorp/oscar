@@ -1,14 +1,14 @@
 package pythonci
 
 import (
-	"fmt"
-
 	ciutil "github.com/opensourcecorp/oscar/internal/ci/util"
 )
 
 var (
+	runCmd = []string{"uvx"}
+
 	// NOTE: installing will also provide the 'uvx' command, which we also need
-	uv = ciutil.VersionedTask{
+	uv = ciutil.VersionedTool{
 		Name: "uv",
 		// NOTE: this is a pattern string used in macOS & Linux (respectively below) downloads. The
 		// positions represent:
@@ -19,21 +19,24 @@ var (
 		RemotePath: "https://github.com/astral-sh/uv/releases/download/%s/uv-%s-%s-%s.tar.gz",
 		Version:    "0.8.4",
 	}
-	ruff = ciutil.VersionedTask{
-		Name:    "ruff",
-		Version: "0.12.7",
+	ruffLint = ciutil.VersionedTool{
+		Name:       "ruff",
+		Version:    "0.12.7",
+		RunCommand: runCmd,
 	}
-	pydoclint = ciutil.VersionedTask{
-		Name:    "pydoclint",
-		Version: "0.6.6",
+	ruffFormat = ciutil.VersionedTool{
+		Name:       "ruff",
+		Version:    "0.12.7",
+		RunCommand: runCmd,
 	}
-	mypy = ciutil.VersionedTask{
-		Name:    "mypy",
-		Version: "1.17.1",
+	pydoclint = ciutil.VersionedTool{
+		Name:       "pydoclint",
+		Version:    "0.6.6",
+		RunCommand: runCmd,
+	}
+	mypy = ciutil.VersionedTool{
+		Name:       "mypy",
+		Version:    "1.17.1",
+		RunCommand: runCmd,
 	}
 )
-
-// TODO:
-func getVersionedArgs(t ciutil.VersionedTask) []string {
-	return []string{"uvx", fmt.Sprintf("%s@%s", t.Name, t.Version)}
-}

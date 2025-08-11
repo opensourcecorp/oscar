@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"slices"
 	"strings"
 
 	ciutil "github.com/opensourcecorp/oscar/internal/ci/util"
@@ -46,7 +45,7 @@ func (t baseInitTask) Init() error {
 	defer fmt.Println("Done.")
 	fmt.Printf("- Python: Installing uv... ")
 
-	if ciutil.IsCommandUpToDate(uv) {
+	if ciutil.IsToolUpToDate(uv) {
 		return nil
 	}
 
@@ -72,19 +71,16 @@ func (t baseInitTask) Init() error {
 
 	// Grab the last element of the download URL (minus the extension) to get the unpacked archive
 	// directory name
-	urlSplit := strings.Split(releaseURL, "/")
-	archiveName := strings.ReplaceAll(urlSplit[len(urlSplit)-1], ".tar.gz", "")
+	archiveName := strings.ReplaceAll(filepath.Base(releaseURL), ".tar.gz", "")
 
 	downloadedFile := filepath.Join(os.TempDir(), "uv.tar.gz")
 
-	// NOTE: yes, I know, but this is WAY easier than doing a whole Go song & dance with downloading
-	// & unpacking a targz archive. System deps are called out in the README, don't @ me.
 	installCmd := []string{"bash", "-c",
 		fmt.Sprintf(`
-					curl -fsSL -o %s %s
-					tar -C %s -xzf %s
-					mv %s/%s/{uv,uvx} %s/
-				`,
+				curl -fsSL -o %s %s
+				tar -C %s -xzf %s
+				mv %s/%s/{uv,uvx} %s/
+			`,
 			downloadedFile, releaseURL,
 			os.TempDir(), downloadedFile,
 			os.TempDir(), archiveName, consts.OscarHomeBin,
@@ -130,8 +126,7 @@ func (t ruffLintTask) Init() error { return nil }
 
 // Run implements [ciutil.Tasker.Run].
 func (t ruffLintTask) Run() error {
-	args := slices.Concat(getVersionedArgs(ruff), []string{"check", "--fix", "./src"})
-	if err := ciutil.RunCommand(args); err != nil {
+	if err := ciutil.RunVersionedCommand(ruffLint, []string{"check", "--fix", "./src"}); err != nil {
 		return err
 	}
 
@@ -149,8 +144,7 @@ func (t ruffFormatTask) Init() error { return nil }
 
 // Run implements [ciutil.Tasker.Run].
 func (t ruffFormatTask) Run() error {
-	args := slices.Concat(getVersionedArgs(ruff), []string{"format", "./src"})
-	if err := ciutil.RunCommand(args); err != nil {
+	if err := ciutil.RunVersionedCommand(ruffFormat, []string{"format", "./src"}); err != nil {
 		return err
 	}
 
@@ -168,8 +162,7 @@ func (t pydoclintTask) Init() error { return nil }
 
 // Run implements [ciutil.Tasker.Run].
 func (t pydoclintTask) Run() error {
-	args := slices.Concat(getVersionedArgs(pydoclint), []string{"./src"})
-	if err := ciutil.RunCommand(args); err != nil {
+	if err := ciutil.RunVersionedCommand(pydoclint, []string{"./src"}); err != nil {
 		return err
 	}
 
@@ -187,8 +180,7 @@ func (t mypyTask) Init() error { return nil }
 
 // Run implements [ciutil.Tasker.Run].
 func (t mypyTask) Run() error {
-	args := slices.Concat(getVersionedArgs(mypy), []string{"./src"})
-	if err := ciutil.RunCommand(args); err != nil {
+	if err := ciutil.RunVersionedCommand(mypy, []string{"./src"}); err != nil {
 		return err
 	}
 

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	goci "github.com/opensourcecorp/oscar/internal/ci/go"
 	pythonci "github.com/opensourcecorp/oscar/internal/ci/python"
@@ -28,9 +29,9 @@ func GetCITaskMap() (TaskMap, error) {
 	for langName, getTasksFunc := range map[string]func(ciutil.Repo) []ciutil.Tasker{
 		"Go":     goci.Tasks,
 		"Python": pythonci.Tasks,
-		// "NodeJS":   nodejsci.Tasks,
-		"Shell": shellci.Tasks,
-		// "Markdown": markdownci.Tasks,
+		"Shell":  shellci.Tasks,
+		// "Markdown":   markdownci.Tasks,
+		// "JavaScript": nodejsci.Tasks,
 	} {
 		tasks := getTasksFunc(repo)
 		if len(tasks) > 0 {
@@ -48,6 +49,8 @@ func GetCITaskMap() (TaskMap, error) {
 
 // Run defines the behavior for running all CI tasks for the repository.
 func Run() (err error) {
+	runStartTime := time.Now()
+
 	var (
 		// Vars for determining text padding in output banners
 		longestLanguageNameLength int
@@ -109,6 +112,8 @@ func Run() (err error) {
 				continue
 			}
 
+			taskStartTime := time.Now()
+
 			taskBannerPadding := strings.Repeat(".", longestInfoTextLength-len(t.InfoText()))
 			// NOTE: no trailing newline on purpose
 			fmt.Printf("> %s %s............", t.InfoText(), taskBannerPadding)
@@ -146,7 +151,7 @@ func Run() (err error) {
 					return fmt.Errorf("internal error: %w", err)
 				}
 			} else {
-				fmt.Printf("PASSED\n")
+				fmt.Printf("PASSED (t: %s)\n", time.Since(taskStartTime).Round(time.Second/1000).String())
 			}
 			if err := t.Post(); err != nil {
 				iprint.Errorf("running task post-steps: %v\n", err)
@@ -165,7 +170,7 @@ func Run() (err error) {
 		return errors.New("one or more CI checks failed")
 	}
 
-	fmt.Printf("All checks passed!\n")
+	fmt.Printf("All checks passed! (finished in %s)\n", time.Since(runStartTime).Round(time.Second/1000).String())
 
 	return err
 }

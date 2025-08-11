@@ -1,0 +1,24 @@
+services:
+  oscar:
+    container_name: "oscar"
+    build:
+      context: "."
+      dockerfile: "./Containerfile"
+      args:
+        GO_VERSION: "${GO_VERSION}"
+        http_proxy: "${http_proxy}"
+        https_proxy: "${https_proxy}"
+    image: "ghrc.io/opensourcecorp/oscar:latest"
+    pull_policy: "if_not_present"
+    command: ["ci"]
+    environment:
+      http_proxy: "${http_proxy}"
+      https_proxy: "${https_proxy}"
+    volumes:
+      - type: "bind"
+        source: "${PWD}"
+        target: "/home/oscar/app"
+      - type: "bind"
+        source: "${HOME}/.oscar"
+        target: "/home/oscar/.oscar"
+    user: "1000"

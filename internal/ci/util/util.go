@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os/exec"
 	"regexp"
+	"slices"
 	"strings"
 
 	iprint "github.com/opensourcecorp/oscar/internal/print"
@@ -13,16 +14,19 @@ import (
 // InitSystem runs init checks against the host itself, so that other checks can run.
 func InitSystem() error {
 	requiredSystemCommands := [][]string{
-		{"command", "-v", "bash"},
-		{"command", "-v", "git"},
-		{"command", "-v", "curl"},
-		{"command", "-v", "tar"},
+		{"bash", "--version"},
+		{"git", "--version"},
+		{"curl", "--version"},
+		{"tar", "--version"},
 	}
 
 	for _, cmd := range requiredSystemCommands {
 		iprint.Debugf("Running '%v'\n", cmd)
-		if _, err := exec.Command(cmd[0], cmd[1:]...).CombinedOutput(); err != nil {
-			return fmt.Errorf("command '%s' not found on PATH, cannot continue", cmd[2])
+		if output, err := exec.Command(cmd[0], cmd[1:]...).CombinedOutput(); err != nil {
+			return fmt.Errorf(
+				"command '%s' possibly not found on PATH, cannot continue (error: %w -- output: %s)",
+				cmd[0], err, string(output),
+			)
 		}
 	}
 
@@ -48,16 +52,34 @@ func RunCommand(cmdArgs []string) error {
 	return nil
 }
 
-// IsCommandUpToDate checks whether or not a provided [VersionedTask]'s command is installed, and
+// RunVersionedCommand wraps the [RunCommand] function in this package by passing args for the tool
+// to be run by a different program, like `uvx` or `npx`.
+func RunVersionedCommand(t VersionedTool, args []string) error {
+	allArgs := slices.Concat(
+		t.RunCommand,
+		[]string{fmt.Sprintf("%s@%s", t.Name, t.Version)},
+		args,
+	)
+
+	if err := RunCommand(allArgs); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// IsToolUpToDate checks whether or not a provided [VersionedTool]'s tooling is installed, and
 // up-to-date on the system. This is used to facilitate skipping unecessary installs, etc.
-func IsCommandUpToDate(vt VersionedTask) bool {
+func IsToolUpToDate(vt VersionedTool) bool {
 	commandUpToDate := true
 
 	version := strings.TrimPrefix(vt.Version, "v")
 	re := regexp.MustCompile(version)
 
-	// TODO: revisit how reliable this is for everything
 	versionCheckArg := "--version"
+	if vt.VersionCheckArg != "" {
+		versionCheckArg = vt.VersionCheckArg
+	}
 
 	cmd := exec.Command(vt.Name, versionCheckArg)
 	outputRaw, err := cmd.CombinedOutput()
@@ -93,18 +115,23 @@ func GetRepoComposition() (Repo, error) {
 	if err != nil {
 		errs = errors.Join(errs, err)
 	}
-	hasPython, err := filesExistInTree(`ls **/*.py*`)
+
+	hasPython, err := filesExistInTree(`find . -type f -name '*.py' -or -name '*.pyi'`)
 	if err != nil {
 		errs = errors.Join(errs, err)
 	}
-	hasShell, err := filesExistInTree(`
-		# DO NOT discover shell files for oscar itself -- this will make oscar's own CI recurse
-		# infinitely
-		# TODO: find a way to get around that limitation for oscar's own testing
-		if [[ ! $(git remote get-url origin) =~ opensourcecorp/oscar ]] ; then
-			find . -type f -name '*.*sh' -or -name '*.bats'
-		fi
-	`)
+
+	hasShell, err := filesExistInTree(`find . -type f -name '*.*sh' -or -name '*.bats'`)
+	if err != nil {
+		errs = errors.Join(errs, err)
+	}
+
+	hasNodejs, err := filesExistInTree(`find . -type f -name '*.js' -or -name '*.ts'`)
+	if err != nil {
+		errs = errors.Join(errs, err)
+	}
+
+	hasMarkdown, err := filesExistInTree(`ls **/*.md`)
 	if err != nil {
 		errs = errors.Join(errs, err)
 	}
@@ -114,9 +141,11 @@ func GetRepoComposition() (Repo, error) {
 	}
 
 	repo := Repo{
-		HasGo:     hasGo,
-		HasPython: hasPython,
-		HasShell:  hasShell,
+		HasGo:       hasGo,
+		HasPython:   hasPython,
+		HasShell:    hasShell,
+		HasNodejs:   hasNodejs,
+		HasMarkdown: hasMarkdown,
 	}
 	iprint.Debugf("repo composition: %+v\n", repo)
 
