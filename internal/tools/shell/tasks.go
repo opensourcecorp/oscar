@@ -1,9 +1,9 @@
-package shellci
+package shell
 
 import (
 	"fmt"
 
-	ciutil "github.com/opensourcecorp/oscar/internal/ci/util"
+	"github.com/opensourcecorp/oscar/internal/tools"
 )
 
 type (
@@ -12,14 +12,14 @@ type (
 	batsTask       struct{}
 )
 
-var tasks = []ciutil.Tasker{
+var tasks = []tools.Tasker{
 	shellcheckTask{},
 	shfmtTask{},
 	batsTask{},
 }
 
 // Tasks returns the list of CI tasks.
-func Tasks(repo ciutil.Repo) []ciutil.Tasker {
+func Tasks(repo tools.Repo) []tools.Tasker {
 	if repo.HasShell {
 		return tasks
 	}
@@ -27,50 +27,50 @@ func Tasks(repo ciutil.Repo) []ciutil.Tasker {
 	return nil
 }
 
-// InfoText implements [ciutil.Tasker.InfoText].
+// InfoText implements [tools.Tasker.InfoText].
 func (t shellcheckTask) InfoText() string { return "Lint (shellcheck)" }
 
-// Run implements [ciutil.Tasker.Run].
+// Run implements [tools.Tasker.Run].
 func (t shellcheckTask) Run() error {
 	args := []string{"bash", "-c", fmt.Sprintf(`
 		shopt -s globstar
 		ls **/*.sh || exit 0
 		%s **/*.sh
 	`, shellcheck.Name)}
-	if err := ciutil.RunCommand(args); err != nil {
+	if err := tools.RunCommand(args); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// Post implements [ciutil.Tasker.Post].
+// Post implements [tools.Tasker.Post].
 func (t shellcheckTask) Post() error { return nil }
 
-// InfoText implements [ciutil.Tasker.InfoText].
+// InfoText implements [tools.Tasker.InfoText].
 func (t shfmtTask) InfoText() string { return "Format (shfmt)" }
 
-// Run implements [ciutil.Tasker.Run].
+// Run implements [tools.Tasker.Run].
 func (t shfmtTask) Run() error {
 	args := []string{"bash", "-c", fmt.Sprintf(`
 		shopt -s globstar
 		ls **/*.sh || exit 0
 		%s **/*.sh
 	`, shfmt.Name)}
-	if err := ciutil.RunCommand(args); err != nil {
+	if err := tools.RunCommand(args); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// Post implements [ciutil.Tasker.Post].
+// Post implements [tools.Tasker.Post].
 func (t shfmtTask) Post() error { return nil }
 
-// InfoText implements [ciutil.Tasker.InfoText].
+// InfoText implements [tools.Tasker.InfoText].
 func (t batsTask) InfoText() string { return "Test (bats)" }
 
-// Run implements [ciutil.Tasker.Run].
+// Run implements [tools.Tasker.Run].
 func (t batsTask) Run() error {
 	args := []string{"bash", "-c", fmt.Sprintf(`
 		shopt -s globstar
@@ -78,12 +78,12 @@ func (t batsTask) Run() error {
 		ls **/*.bats || exit 0
 		%s **/*.bats
 	`, bats.Name)}
-	if err := ciutil.RunCommand(args); err != nil {
+	if err := tools.RunCommand(args); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// Post implements [ciutil.Tasker.Post].
+// Post implements [tools.Tasker.Post].
 func (t batsTask) Post() error { return nil }

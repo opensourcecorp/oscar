@@ -7,33 +7,32 @@ import (
 	"strings"
 	"time"
 
-	goci "github.com/opensourcecorp/oscar/internal/ci/go"
-	markdownci "github.com/opensourcecorp/oscar/internal/ci/markdown"
-	pythonci "github.com/opensourcecorp/oscar/internal/ci/python"
-	shellci "github.com/opensourcecorp/oscar/internal/ci/shell"
-	ciutil "github.com/opensourcecorp/oscar/internal/ci/util"
 	"github.com/opensourcecorp/oscar/internal/consts"
-	igit "github.com/opensourcecorp/oscar/internal/git"
 	iprint "github.com/opensourcecorp/oscar/internal/print"
+	"github.com/opensourcecorp/oscar/internal/tools"
+	igo "github.com/opensourcecorp/oscar/internal/tools/go"
+	"github.com/opensourcecorp/oscar/internal/tools/markdown"
+	"github.com/opensourcecorp/oscar/internal/tools/python"
+	"github.com/opensourcecorp/oscar/internal/tools/shell"
 )
 
 // TaskMap is a less-verbose type alias for mapping language names to function signatures that
 // return a language's tasks.
-type TaskMap map[string][]ciutil.Tasker
+type TaskMap map[string][]tools.Tasker
 
 // GetCITaskMap assembles the overall list of CI tasks, keyed by their language/tooling name
 func GetCITaskMap() (TaskMap, error) {
-	repo, err := ciutil.GetRepoComposition()
+	repo, err := tools.GetRepoComposition()
 	if err != nil {
 		return nil, fmt.Errorf("getting repo composition: %w", err)
 	}
 
 	out := make(TaskMap, 0)
-	for langName, getTasksFunc := range map[string]func(ciutil.Repo) []ciutil.Tasker{
-		"Go":       goci.Tasks,
-		"Python":   pythonci.Tasks,
-		"Shell":    shellci.Tasks,
-		"Markdown": markdownci.Tasks,
+	for langName, getTasksFunc := range map[string]func(tools.Repo) []tools.Tasker{
+		"Go":       igo.Tasks,
+		"Python":   python.Tasks,
+		"Shell":    shell.Tasks,
+		"Markdown": markdown.Tasks,
 	} {
 		tasks := getTasksFunc(repo)
 		if len(tasks) > 0 {
@@ -54,7 +53,7 @@ func Run() (err error) {
 	runStartTime := time.Now()
 
 	// Handle system init
-	if err := ciutil.InitSystem(); err != nil {
+	if err := tools.InitSystem(); err != nil {
 		return fmt.Errorf("initializing system: %w", err)
 	}
 	// The mise config that oscar uses is written during init, so be sure to defer its removal here
@@ -89,7 +88,7 @@ func Run() (err error) {
 	iprint.Debugf("longestInfoTextLength: %d\n", longestInfoTextLength)
 
 	// For tracking any changes to Git status etc. after each Task runs
-	git, err := igit.New()
+	git, err := NewGit()
 	if err != nil {
 		return fmt.Errorf("internal error: %w", err)
 	}
@@ -130,7 +129,7 @@ func Run() (err error) {
 			}
 
 			if runErr != nil || gitStatusHasChanged {
-				iprint.Errorf("FAILED! (%s)\n", ciutil.RunDurationString(taskStartTime))
+				iprint.Errorf("FAILED! (%s)\n", tools.RunDurationString(taskStartTime))
 				iprint.Errorf("\n")
 
 				if runErr != nil {
@@ -146,19 +145,19 @@ func Run() (err error) {
 				failures = append(failures, fmt.Sprintf("%s :: %s", lang, t.InfoText()))
 
 				// Also need to reset the baseline status
-				git, err = igit.New()
+				git, err = NewGit()
 				if err != nil {
 					return fmt.Errorf("internal error: %w", err)
 				}
 			} else {
-				fmt.Printf("PASSED (%s)\n", ciutil.RunDurationString(taskStartTime))
+				fmt.Printf("PASSED (%s)\n", tools.RunDurationString(taskStartTime))
 			}
 		}
 	}
 
 	if len(failures) > 0 {
 		iprint.Errorf("\n================================================================\n")
-		iprint.Errorf("The following checks failed and/or caused a git diff: (%s)\n", ciutil.RunDurationString(runStartTime))
+		iprint.Errorf("The following checks failed and/or caused a git diff: (%s)\n", tools.RunDurationString(runStartTime))
 		for _, f := range failures {
 			iprint.Errorf("- %s\n", f)
 		}
@@ -166,7 +165,7 @@ func Run() (err error) {
 		return errors.New("one or more CI checks failed")
 	}
 
-	fmt.Printf("All checks passed! (%s)\n", ciutil.RunDurationString(runStartTime))
+	fmt.Printf("All checks passed! (%s)\n", tools.RunDurationString(runStartTime))
 
 	return err
 }

@@ -1,19 +1,19 @@
-package shellci
+package shell
 
 import (
-	ciutil "github.com/opensourcecorp/oscar/internal/ci/util"
+	"github.com/opensourcecorp/oscar/internal/tools"
 )
 
 var (
-	shellcheck = ciutil.Tool{
+	shellcheck = tools.Tool{
 		Name:    "shellcheck",
 		Version: "v0.11.0",
 	}
-	shfmt = ciutil.Tool{
+	shfmt = tools.Tool{
 		Name:    "shfmt",
 		Version: "v3.12.0",
 	}
-	bats = ciutil.Tool{
+	bats = tools.Tool{
 		Name: "bats",
 		// NOTE: bats just gets cloned then installed with its install script
 		RemotePath: "https://github.com/bats-core/bats-core.git",

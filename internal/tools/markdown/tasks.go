@@ -1,24 +1,24 @@
-package markdownci
+package markdown
 
 import (
 	"fmt"
 	"os"
 	"path/filepath"
 
-	ciconfig "github.com/opensourcecorp/oscar/internal/ci/configfiles"
-	ciutil "github.com/opensourcecorp/oscar/internal/ci/util"
+	"github.com/opensourcecorp/oscar/internal/tools"
+	"github.com/opensourcecorp/oscar/internal/tools/toolcfg"
 )
 
 type (
 	markdownlintTask struct{}
 )
 
-var tasks = []ciutil.Tasker{
+var tasks = []tools.Tasker{
 	markdownlintTask{},
 }
 
 // Tasks returns the list of CI tasks.
-func Tasks(repo ciutil.Repo) []ciutil.Tasker {
+func Tasks(repo tools.Repo) []tools.Tasker {
 	if repo.HasMarkdown {
 		return tasks
 	}
@@ -26,12 +26,12 @@ func Tasks(repo ciutil.Repo) []ciutil.Tasker {
 	return nil
 }
 
-// InfoText implements [ciutil.Tasker.InfoText].
+// InfoText implements [tools.Tasker.InfoText].
 func (t markdownlintTask) InfoText() string { return "Lint (markdownlint)" }
 
-// Run implements [ciutil.Tasker.Run].
+// Run implements [tools.Tasker.Run].
 func (t markdownlintTask) Run() error {
-	cfgFileContents, err := ciconfig.Files.ReadFile(filepath.Base(markdownlint.ConfigFilePath))
+	cfgFileContents, err := toolcfg.Files.ReadFile(filepath.Base(markdownlint.ConfigFilePath))
 	if err != nil {
 		return fmt.Errorf("reading embedded file contents: %w", err)
 	}
@@ -46,12 +46,12 @@ func (t markdownlintTask) Run() error {
 		"**/*.md",
 	}
 
-	if err := ciutil.RunCommand(args); err != nil {
+	if err := tools.RunCommand(args); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// Post implements [ciutil.Tasker.Post].
+// Post implements [tools.Tasker.Post].
 func (t markdownlintTask) Post() error { return nil }

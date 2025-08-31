@@ -1,4 +1,4 @@
-package ciutil
+package tools
 
 import (
 	"errors"
@@ -13,6 +13,7 @@ import (
 
 	"github.com/opensourcecorp/oscar"
 	"github.com/opensourcecorp/oscar/internal/consts"
+	"github.com/opensourcecorp/oscar/internal/hostinfo"
 	iprint "github.com/opensourcecorp/oscar/internal/print"
 )
 
@@ -176,14 +177,14 @@ func installMise() (err error) {
 		miseVersion = consts.MiseVersion
 	}
 
-	hostInput := HostInfoInput{
+	hostInput := hostinfo.Input{
 		KernelLinux: "linux",
 		KernelMacOS: "macos",
 		ArchAMD64:   "x64",
 		ArchARM64:   "arm64",
 	}
 
-	host, err := GetHostInfo(hostInput)
+	host, err := hostinfo.Get(hostInput)
 	if err != nil {
 		return fmt.Errorf("getting host info during mise install: %w", err)
 	}

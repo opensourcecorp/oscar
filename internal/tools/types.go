@@ -1,4 +1,4 @@
-package ciutil
+package tools
 
 // Tasker defines the method set for working with metadata for a given CI Task.
 type Tasker interface {

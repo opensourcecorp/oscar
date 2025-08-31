@@ -1,25 +1,25 @@
-package pythonci
+package python
 
 import (
-	ciutil "github.com/opensourcecorp/oscar/internal/ci/util"
+	"github.com/opensourcecorp/oscar/internal/tools"
 )
 
 var (
 	// NOTE: even though ruff is used for both linting & formatting, their implementations differ,
 	// so we need two distinct [ciutil.Tool]s.
-	ruffLint = ciutil.Tool{
+	ruffLint = tools.Tool{
 		Name:    "ruff",
 		Version: "0.12.7",
 	}
-	ruffFormat = ciutil.Tool{
+	ruffFormat = tools.Tool{
 		Name:    "ruff",
 		Version: "0.12.7",
 	}
-	pydoclint = ciutil.Tool{
+	pydoclint = tools.Tool{
 		Name:    "pydoclint",
 		Version: "0.6.6",
 	}
-	mypy = ciutil.Tool{
+	mypy = tools.Tool{
 		Name:    "mypy",
 		Version: "1.17.1",
 	}

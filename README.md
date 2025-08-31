@@ -70,6 +70,8 @@ Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for details about developing `os
 ## Roadmap
 
 * Add `VERSION` check comparing to `main` as a CI task
+* Add check for changelog Markdown file that matches what's in `VERSION` (we should also use that
+  file as the exact GH Release post contents)
 * Workstation setup
   * Have `oscar` manage Makefiles, dotfiles, etc.
 * CI additions

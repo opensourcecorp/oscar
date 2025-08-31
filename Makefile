@@ -41,28 +41,9 @@ build: clean
 	@printf 'built to %s\n' ./build/$(BINNAME)
 
 xbuild: clean
-	@for target in \
-		darwin-amd64 \
-		darwin-arm64 \
-		linux-amd64 \
-		linux-arm64 \
-	; \
-	do \
-		GOOS=$$(echo "$${target}" | cut -d'-' -f1) ; \
-		GOARCH=$$(echo "$${target}" | cut -d'-' -f2) ; \
-		outdir=build/"$${GOOS}-$${GOARCH}" ; \
-		mkdir -p "$${outdir}" ; \
-		printf "Building for %s-%s into build/ ...\n" "$${GOOS}" "$${GOARCH}" ; \
-		GOOS="$${GOOS}" GOARCH="$${GOARCH}" $(RUN) go build -o "$${outdir}"/$(BINNAME) $(BINPATH) ; \
-	done
+	@bash ./scripts/xbuild.sh
 
 package: xbuild
-	@mkdir -p dist
-	@cd build || exit 1; \
-	for built in * ; do \
-		printf 'Packaging for %s into dist/ ...\n' "$${built}" ; \
-		cd $${built} && tar -czf ../../dist/$(BINNAME)_$${built}.tar.gz * && cd - >/dev/null ; \
-	done
 
 clean:
 	@rm -rf \

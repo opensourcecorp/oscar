@@ -1,4 +1,4 @@
-package igit
+package ci
 
 import (
 	"fmt"
@@ -25,8 +25,8 @@ type Status struct {
 	UntrackedFiles []string
 }
 
-// New returns a snapshot of Git information available at call-time.
-func New() (*Git, error) {
+// NewGit returns a snapshot of Git information available at call-time.
+func NewGit() (*Git, error) {
 	status, err := getRawStatus()
 	if err != nil {
 		return nil, err
@@ -37,7 +37,7 @@ func New() (*Git, error) {
 	}, nil
 }
 
-// Update recalculates various Git metadata, respecting any existing baseline values set in [New].
+// Update recalculates various Git metadata, respecting any existing baseline values set in [NewGit].
 func (g *Git) Update() error {
 	status, err := getRawStatus()
 	if err != nil {
