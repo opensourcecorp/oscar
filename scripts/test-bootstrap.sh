@@ -16,6 +16,10 @@ _teardown() {
 }
 
 cmd="${1:-}"
+if [[ -z "${cmd:-}" ]] ; then
+  printf 'Must provide a valid subcommand\n' >&2
+  exit 1
+fi
 
 case "${cmd}" in
   setup)

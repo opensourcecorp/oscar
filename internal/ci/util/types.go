@@ -17,7 +17,6 @@ type Repo struct {
 	HasGo       bool
 	HasPython   bool
 	HasShell    bool
-	HasNodejs   bool
 	HasMarkdown bool
 }
 
@@ -50,9 +49,6 @@ func (repo Repo) String() string {
 	}
 	if repo.HasShell {
 		out += "- Shell (sh, bash, etc.)\n"
-	}
-	if repo.HasNodejs {
-		out += "- JavaScript (.js/.ts)\n"
 	}
 	if repo.HasMarkdown {
 		out += "- Markdown\n"

@@ -5,10 +5,15 @@ import (
 	"runtime"
 )
 
-// HostInfoInput allows different tools to specify the different possible values for their host
-// information, such as when downloading a release artifact. This is necessary to provide because
-// different tools use different values for their host info, e.g. some use "x86_64" and some use
-// "amd64", some additionally specify an OS value and some do not, etc.
+/*
+HostInfoInput allows different tools to specify the different possible values for their host-related
+information. This is primarily used when downloading a release artifact. This is necessary to
+provide because different tools use different values for their host info. For example:
+
+  - Some tools use "x86_64" for CPU architecture, while some use "amd64", and others even use "x64"
+  - In addition to a kernel ID, some tools additionally specify an OS value (e.g. both "darwin" and
+    "macos")
+*/
 type HostInfoInput struct {
 	// The name a tool uses for Linux OSes (e.g. "linux", "unknown", etc.)
 	OSLinux string

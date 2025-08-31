@@ -28,7 +28,7 @@ func GetCITaskMap() (TaskMap, error) {
 		return nil, fmt.Errorf("getting repo composition: %w", err)
 	}
 
-	taskMap := make(TaskMap, 0)
+	out := make(TaskMap, 0)
 	for langName, getTasksFunc := range map[string]func(ciutil.Repo) []ciutil.Tasker{
 		"Go":       goci.Tasks,
 		"Python":   pythonci.Tasks,
@@ -37,16 +37,16 @@ func GetCITaskMap() (TaskMap, error) {
 	} {
 		tasks := getTasksFunc(repo)
 		if len(tasks) > 0 {
-			taskMap[langName] = tasks
+			out[langName] = tasks
 		}
 	}
 
-	if len(taskMap) > 0 {
+	if len(out) > 0 {
 		fmt.Print(repo.String())
-		iprint.Debugf("GetCITasks output: %+v\n", taskMap)
+		iprint.Debugf("GetCITasks output: %+v\n", out)
 	}
 
-	return taskMap, nil
+	return out, nil
 }
 
 // Run defines the behavior for running all CI tasks for the repository.
@@ -130,7 +130,7 @@ func Run() (err error) {
 			}
 
 			if runErr != nil || gitStatusHasChanged {
-				iprint.Errorf("FAILED! %s\n", ciutil.DurationString(taskStartTime))
+				iprint.Errorf("FAILED! (%s)\n", ciutil.RunDurationString(taskStartTime))
 				iprint.Errorf("\n")
 
 				if runErr != nil {
@@ -151,14 +151,14 @@ func Run() (err error) {
 					return fmt.Errorf("internal error: %w", err)
 				}
 			} else {
-				fmt.Printf("PASSED %s\n", ciutil.DurationString(taskStartTime))
+				fmt.Printf("PASSED (%s)\n", ciutil.RunDurationString(taskStartTime))
 			}
 		}
 	}
 
 	if len(failures) > 0 {
 		iprint.Errorf("\n================================================================\n")
-		iprint.Errorf("The following checks failed and/or caused a git diff: %s\n", ciutil.DurationString(runStartTime))
+		iprint.Errorf("The following checks failed and/or caused a git diff: (%s)\n", ciutil.RunDurationString(runStartTime))
 		for _, f := range failures {
 			iprint.Errorf("- %s\n", f)
 		}
@@ -166,7 +166,7 @@ func Run() (err error) {
 		return errors.New("one or more CI checks failed")
 	}
 
-	fmt.Printf("All checks passed! %s\n", ciutil.DurationString(runStartTime))
+	fmt.Printf("All checks passed! (%s)\n", ciutil.RunDurationString(runStartTime))
 
 	return err
 }

@@ -3,6 +3,7 @@ package markdownci
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	ciconfig "github.com/opensourcecorp/oscar/internal/ci/configfiles"
 	ciutil "github.com/opensourcecorp/oscar/internal/ci/util"
@@ -30,7 +31,7 @@ func (t markdownlintTask) InfoText() string { return "Lint (markdownlint)" }
 
 // Run implements [ciutil.Tasker.Run].
 func (t markdownlintTask) Run() error {
-	cfgFileContents, err := ciconfig.Files.ReadFile("markdownlint.yaml")
+	cfgFileContents, err := ciconfig.Files.ReadFile(filepath.Base(markdownlint.ConfigFilePath))
 	if err != nil {
 		return fmt.Errorf("reading embedded file contents: %w", err)
 	}

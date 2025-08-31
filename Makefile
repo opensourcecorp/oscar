@@ -1,6 +1,11 @@
 SHELL = /usr/bin/env bash -euo pipefail
 
-RUN = mise exec --
+# Conditionally use mise if its available, otherwise expect the host to have any needed tools on $PATH
+RUN =
+MISE := $(shell command -v mise || command -v "$${HOME}/.oscar/bin/mise")
+ifneq ($(MISE),)
+RUN = $(MISE) exec --
+endif
 
 BINNAME := oscar
 BINPATH := ./cmd/$(BINNAME)
@@ -16,7 +21,7 @@ SHELL = /usr/bin/env bash -euo pipefail
 all: ci
 
 ci: clean
-	@$(RUN) go run ./cmd/oscar/main.go ci
+	@$(RUN) go run ./cmd/$(BINNAME)/main.go ci
 
 # test is just an alias for ci
 test: ci
@@ -33,6 +38,7 @@ ci-container:
 build: clean
 	@mkdir -p ./build/$$($(RUN) go env GOOS)-$$($(RUN) go env GOARCH)
 	@$(RUN) go build -o ./build/$(BINNAME) $(BINPATH)
+	@printf 'built to %s\n' ./build/$(BINNAME)
 
 xbuild: clean
 	@for target in \
@@ -67,8 +73,7 @@ clean:
 		./build/ \
 		./dist/ \
 		./$(BINNAME) \
-		./main \
-		./oscar/
+		./main
 
 image: clean
 	@export BUILDKIT_PROGRESS=plain && \
@@ -76,4 +81,4 @@ image: clean
 	$(DOCKER) compose build
 
 run-image:
-	@$(DOCKER) compose run oscar
+	@$(DOCKER) compose run $(BINNAME)

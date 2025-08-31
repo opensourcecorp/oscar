@@ -1,51 +1,28 @@
-# This Containerfile isn't mean for creating artifacts etc., it's just a way to perform portable,
-# local CI checks in case there are workstation-specific issues a developer faces.
-FROM debian:13-slim AS builder
-
-ARG MISE_VERSION="v2025.8.21"
+ARG GO_VERSION
+ARG MISE_VERSION
 
 # These two proxy args are helpful if you're trying to build on a corporate network -- they do not
 # impact the image if not, though.
 ARG http_proxy
 ARG https_proxy
 
+####################################################################################################
+
+FROM docker.io/library/golang:${GO_VERSION} AS builder
+
 RUN apt-get update && apt-get install -y \
         bash \
         ca-certificates \
-        curl \
-        git \
-        make \
-        rename \
-        tar \
-        xz-utils
+        make
 
 COPY . /go/app
 WORKDIR /go/app
 
-RUN curl -fsSL -o /usr/local/bin/mise "https://github.com/jdx/mise/releases/download/${MISE_VERSION}/mise-${MISE_VERSION}-linux-x64" && \
-    chmod +x /usr/local/bin/mise && \
-    mise trust --all && \
-    mise install
-
-# NOTE: we want to run CI twice -- once to make sure it works, and another to make sure it's
-# *faster* because of the version-checking
-RUN bash ./scripts/test-handler.sh setup && \
-    bash -c 'echo $(date +%s) > /tmp/starttime' && \
-    make ci && \
-    bash -c 'echo $(date +%s) > /tmp/endtime' && \
-    bash -c 'echo $(( $(cat /tmp/endtime) - $(cat /tmp/starttime) )) > /tmp/duration_1'
-RUN bash -c 'echo $(date +%s) > /tmp/starttime' && \
-    make ci && \
-    bash -c 'echo $(date +%s) > /tmp/endtime' && \
-    bash -c 'echo $(( $(cat /tmp/endtime) - $(cat /tmp/starttime) )) > /tmp/duration_2'
-RUN bash -c 'if [[ ! "$(cat /tmp/duration_2)" -lt "$(cat /tmp/duration_1)" ]] ; then echo "Second CI run should have taken less time than the first" && exit 1 ; fi'
-
-# Build last so the final image has access to copy the binary
 RUN make build
 
-###############################################################################
+####################################################################################################
 
-FROM docker.io/library/debian:13-slim
+FROM docker.io/library/debian:13-slim AS ci
 
 COPY --from=builder /go/app/build/oscar /oscar
 
@@ -54,10 +31,40 @@ RUN apt-get update && apt-get install -y \
         ca-certificates \
         curl \
         git \
+        gnupg2 \
         make \
-        rename \
-        tar \
-        xz-utils
+        rename
+
+COPY . /go/app
+WORKDIR /go/app
+
+# NOTE: when creating some shims, mise refers to itself assuming it is on the $PATH, so we need to
+# symlink it out so it can do that
+RUN ln -fs "${HOME}/.oscar/bin/mise" /usr/local/bin/mise && \
+    bash ./scripts/test-bootstrap.sh setup && \
+    /oscar ci
+
+# ####################################################################################################
+
+FROM docker.io/library/debian:13-slim AS final
+
+ENV MISE_VERSION=${MISE_VERSION}
+
+COPY --from=builder /go/app/build/oscar /oscar
+
+# NOTE: Docker BuildKit will skip stages it doesn't see as dependencies, so to enforce the "ci"
+# stage above to run, we need to force a dependency here
+COPY --from=ci /go/app/VERSION /VERSION
+
+RUN apt-get update && apt-get install -y \
+        bash \
+        ca-certificates \
+        git \
+        gnupg2
+
+# NOTE: when creating some shims, mise refers to itself assuming it is on the $PATH, so we need to
+# symlink it out so it can do that
+RUN ln -fs "${HOME}/.oscar/bin/mise" /usr/local/bin/mise
 
 RUN groupadd --gid=1000 oscar && \
     useradd --uid=1000 --gid=1000 --create-home oscar && \
@@ -65,11 +72,9 @@ RUN groupadd --gid=1000 oscar && \
 USER oscar
 WORKDIR /home/oscar/app
 
-RUN curl -fsSL -o /usr/local/bin/mise "https://github.com/jdx/mise/releases/download/${MISE_VERSION}/mise-${MISE_VERSION}-linux-x64" && \
-    chmod +x /usr/local/bin/mise && \
-    mise trust --all
-
+# The location for the source code oscar will be run against
 VOLUME /home/oscar/app
+# oscar's home directory, for caching on the host
 VOLUME /home/oscar/.oscar
 
 ENTRYPOINT ["/oscar"]

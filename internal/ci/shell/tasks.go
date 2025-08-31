@@ -30,6 +30,7 @@ func Tasks(repo ciutil.Repo) []ciutil.Tasker {
 // InfoText implements [ciutil.Tasker.InfoText].
 func (t shellcheckTask) InfoText() string { return "Lint (shellcheck)" }
 
+// Run implements [ciutil.Tasker.Run].
 func (t shellcheckTask) Run() error {
 	args := []string{"bash", "-c", fmt.Sprintf(`
 		shopt -s globstar
@@ -49,6 +50,7 @@ func (t shellcheckTask) Post() error { return nil }
 // InfoText implements [ciutil.Tasker.InfoText].
 func (t shfmtTask) InfoText() string { return "Format (shfmt)" }
 
+// Run implements [ciutil.Tasker.Run].
 func (t shfmtTask) Run() error {
 	args := []string{"bash", "-c", fmt.Sprintf(`
 		shopt -s globstar
@@ -68,6 +70,7 @@ func (t shfmtTask) Post() error { return nil }
 // InfoText implements [ciutil.Tasker.InfoText].
 func (t batsTask) InfoText() string { return "Test (bats)" }
 
+// Run implements [ciutil.Tasker.Run].
 func (t batsTask) Run() error {
 	args := []string{"bash", "-c", fmt.Sprintf(`
 		shopt -s globstar

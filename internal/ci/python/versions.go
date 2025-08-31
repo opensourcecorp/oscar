@@ -5,6 +5,8 @@ import (
 )
 
 var (
+	// NOTE: even though ruff is used for both linting & formatting, their implementations differ,
+	// so we need two distinct [ciutil.Tool]s.
 	ruffLint = ciutil.Tool{
 		Name:    "ruff",
 		Version: "0.12.7",

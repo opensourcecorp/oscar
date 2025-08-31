@@ -8,6 +8,7 @@ import (
 )
 
 type (
+	baseConfigTask struct{}
 	buildTask      struct{}
 	ruffLintTask   struct{}
 	ruffFormatTask struct{}
@@ -16,6 +17,7 @@ type (
 )
 
 var tasks = []ciutil.Tasker{
+	baseConfigTask{},
 	buildTask{},
 	ruffLintTask{},
 	ruffFormatTask{},
@@ -31,6 +33,19 @@ func Tasks(repo ciutil.Repo) []ciutil.Tasker {
 
 	return nil
 }
+
+// InfoText implements [ciutil.Tasker.InfoText].
+func (t baseConfigTask) InfoText() string { return "" }
+
+// Run implements [ciutil.Tasker.Run].
+func (t baseConfigTask) Run() error {
+	// ciutil.PlaceConfigFile("pyproject.toml")
+
+	return nil
+}
+
+// Post implements [ciutil.Tasker.Post].
+func (t baseConfigTask) Post() error { return nil }
 
 // InfoText implements [ciutil.Tasker.InfoText].
 func (t buildTask) InfoText() string { return "Build" }

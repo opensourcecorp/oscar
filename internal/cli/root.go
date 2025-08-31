@@ -48,12 +48,14 @@ func NewRootCmd() *cli.Command {
 	return cmd
 }
 
+// maybeSetDebug conditionally sets oscar's debug env var, so that other packages can use it.
 func maybeSetDebug(cmd *cli.Command) {
 	if cmd.Bool(debugFlagName) || os.Getenv(consts.DebugEnvVarName) != "" {
 		_ = os.Setenv(consts.DebugEnvVarName, "true")
 	}
 }
 
+// getVersion retrieves the version of the codebase.
 func getVersion() string {
 	contents, err := oscar.Files.ReadFile("VERSION")
 	if err != nil {
@@ -71,6 +73,7 @@ func getVersion() string {
 	return version
 }
 
+// rootAction defines the logic for oscar's root command.
 func rootAction(_ context.Context, cmd *cli.Command) error {
 	maybeSetDebug(cmd)
 	iprint.Debugf("oscar root command\n")
@@ -78,6 +81,7 @@ func rootAction(_ context.Context, cmd *cli.Command) error {
 	return errors.New("\nERROR: oscar requires a subcommand")
 }
 
+// rootAction defines the logic for oscar's ci subcommand.
 func ciAction(_ context.Context, cmd *cli.Command) error {
 	maybeSetDebug(cmd)
 	iprint.Banner()

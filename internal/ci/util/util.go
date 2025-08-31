@@ -3,6 +3,8 @@ package ciutil
 import (
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"slices"
@@ -34,20 +36,26 @@ func InitSystem() error {
 		}
 	}
 
-	if err := os.MkdirAll(consts.OscarHome, 0755); err != nil {
-		return fmt.Errorf(
-			"internal error when creating oscar home directory '%s': %v",
-			consts.OscarHome, err,
-		)
+	for _, d := range []string{consts.OscarHome, consts.OscarHomeBin} {
+		if err := os.MkdirAll(d, 0755); err != nil {
+			return fmt.Errorf(
+				"internal error when creating oscar directory '%s': %v",
+				d, err,
+			)
+		}
 	}
 
-	for name, value := range consts.MiseVars {
+	for name, value := range consts.MiseEnvVars {
 		if err := os.Setenv(name, value); err != nil {
 			return fmt.Errorf(
 				"internal error when setting mise env var '%s': %v",
 				name, err,
 			)
 		}
+	}
+
+	if err := installMise(); err != nil {
+		return fmt.Errorf("installing mise: %w", err)
 	}
 
 	cfgFileContents, err := oscar.Files.ReadFile("mise.toml")
@@ -60,11 +68,14 @@ func InitSystem() error {
 	}
 
 	// Init for task runs
-	if err := RunCommand([]string{"mise", "install"}); err != nil {
+	if err := RunCommand([]string{consts.MiseBinPath, "trust", consts.MiseConfigFileName}); err != nil {
+		return fmt.Errorf("running mise trust: %w", err)
+	}
+	if err := RunCommand([]string{consts.MiseBinPath, "install"}); err != nil {
 		return fmt.Errorf("running mise install: %w", err)
 	}
 
-	fmt.Printf("Done! %s\n\n", DurationString(startTime))
+	fmt.Printf("Done! (%s)\n\n", RunDurationString(startTime))
 
 	return nil
 }
@@ -77,14 +88,14 @@ func RunCommand(cmdArgs []string) error {
 	}
 
 	var args []string
-	if cmdArgs[0] == "mise" {
+	if cmdArgs[0] == consts.MiseBinPath {
 		args = cmdArgs[1:]
 	} else {
 		args = slices.Concat([]string{"exec", "--"}, cmdArgs)
 	}
-	iprint.Debugf("Running '%v'\n", args)
 
-	cmd := exec.Command("mise", args...)
+	cmd := exec.Command(consts.MiseBinPath, args...)
+	iprint.Debugf("Running '%v'\n", cmd.Args)
 	if output, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf(
 			"running '%v': %w, with output:\n%s",
@@ -114,11 +125,6 @@ func GetRepoComposition() (Repo, error) {
 		errs = errors.Join(errs, err)
 	}
 
-	hasNodejs, err := filesExistInTree(`find . -type f -name '*.js' -or -name '*.ts'`)
-	if err != nil {
-		errs = errors.Join(errs, err)
-	}
-
 	hasMarkdown, err := filesExistInTree(`ls **/*.md`)
 	if err != nil {
 		errs = errors.Join(errs, err)
@@ -132,7 +138,6 @@ func GetRepoComposition() (Repo, error) {
 		HasGo:       hasGo,
 		HasPython:   hasPython,
 		HasShell:    hasShell,
-		HasNodejs:   hasNodejs,
 		HasMarkdown: hasMarkdown,
 	}
 	iprint.Debugf("repo composition: %+v\n", repo)
@@ -140,10 +145,91 @@ func GetRepoComposition() (Repo, error) {
 	return repo, nil
 }
 
-func DurationString(t time.Time) string {
-	return fmt.Sprintf("(t: %s)", time.Since(t).Round(time.Second/1000).String())
+// RunDurationString returns a calculated duration used to indicate how long a particular task took
+// to run.
+func RunDurationString(t time.Time) string {
+	return fmt.Sprintf("t: %s", time.Since(t).Round(time.Second/1000).String())
 }
 
+// installMise determines if mise needs to be installed on the host, and if so, installs it into
+// [consts.OscarHomeBin].
+func installMise() (err error) {
+	miseFound := true
+	_, err = os.Stat(consts.MiseBinPath)
+	if err != nil {
+		iprint.Debugf("error when running os.Stat(consts.MiseBinPath): %w\n", err)
+		if os.IsNotExist(err) {
+			miseFound = false
+			iprint.Debugf("mise not found, will install\n")
+		} else {
+			return fmt.Errorf("internal error checking if mise is installed: %w", err)
+		}
+	}
+
+	if miseFound {
+		iprint.Debugf("mise found, nothing to do\n")
+		return
+	}
+
+	miseVersion := os.Getenv("MISE_VERSION")
+	if miseVersion == "" {
+		miseVersion = consts.MiseVersion
+	}
+
+	hostInput := HostInfoInput{
+		KernelLinux: "linux",
+		KernelMacOS: "macos",
+		ArchAMD64:   "x64",
+		ArchARM64:   "arm64",
+	}
+
+	host, err := GetHostInfo(hostInput)
+	if err != nil {
+		return fmt.Errorf("getting host info during mise install: %w", err)
+	}
+
+	miseReleaseURL := fmt.Sprintf(
+		"https://github.com/jdx/mise/releases/download/%s/mise-%s-%s-%s",
+		consts.MiseVersion, consts.MiseVersion, host.Kernel, host.Arch,
+	)
+
+	out, err := os.Create(consts.MiseBinPath)
+	if err != nil {
+		return fmt.Errorf("creating mise target file: %w", err)
+	}
+	defer func() {
+		if closeErr := out.Close(); closeErr != nil {
+			err = errors.Join(err, fmt.Errorf("closing mise target file: %w", closeErr))
+		}
+	}()
+
+	resp, err := http.Get(miseReleaseURL)
+	if err != nil {
+		return fmt.Errorf("making GET request for mise GitHub Release: %w", err)
+	}
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			err = errors.Join(err, fmt.Errorf("closing response body: %w", closeErr))
+		}
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("bad HTTP status code when getting mise: %s", resp.Status)
+	}
+
+	if _, err = io.Copy(out, resp.Body); err != nil {
+		return fmt.Errorf("writing mise data to target: %w", err)
+	}
+
+	if err := os.Chmod(consts.MiseBinPath, 0755); err != nil {
+		return fmt.Errorf("changing mise binary to be executable: %w", err)
+	}
+
+	return err
+}
+
+// filesExistInTree performs file discovery by allowing various tools to check if they need to run
+// based on file presence.
 func filesExistInTree(findScript string) (bool, error) {
 	cmd := exec.Command("bash", "-c", fmt.Sprintf(`
 		shopt -s globstar
