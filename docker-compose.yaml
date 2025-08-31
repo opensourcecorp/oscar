@@ -5,7 +5,7 @@ services:
       context: "."
       dockerfile: "./Containerfile"
       args:
-        GO_VERSION: "${GO_VERSION}"
+        MISE_VERSION: "${MISE_VERSION}"
         http_proxy: "${http_proxy}"
         https_proxy: "${https_proxy}"
     image: "ghrc.io/opensourcecorp/oscar:latest"

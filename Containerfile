@@ -2,7 +2,7 @@
 # local CI checks in case there are workstation-specific issues a developer faces.
 FROM debian:13-slim AS builder
 
-ENV MISE_VERSION="v2025.8.21"
+ARG MISE_VERSION="v2025.8.21"
 
 # These two proxy args are helpful if you're trying to build on a corporate network -- they do not
 # impact the image if not, though.

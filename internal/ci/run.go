@@ -9,7 +9,6 @@ import (
 
 	goci "github.com/opensourcecorp/oscar/internal/ci/go"
 	markdownci "github.com/opensourcecorp/oscar/internal/ci/markdown"
-	nodejsci "github.com/opensourcecorp/oscar/internal/ci/nodejs"
 	pythonci "github.com/opensourcecorp/oscar/internal/ci/python"
 	shellci "github.com/opensourcecorp/oscar/internal/ci/shell"
 	ciutil "github.com/opensourcecorp/oscar/internal/ci/util"
@@ -31,11 +30,10 @@ func GetCITaskMap() (TaskMap, error) {
 
 	taskMap := make(TaskMap, 0)
 	for langName, getTasksFunc := range map[string]func(ciutil.Repo) []ciutil.Tasker{
-		"Go":         goci.Tasks,
-		"Python":     pythonci.Tasks,
-		"Shell":      shellci.Tasks,
-		"Markdown":   markdownci.Tasks,
-		"JavaScript": nodejsci.Tasks,
+		"Go":       goci.Tasks,
+		"Python":   pythonci.Tasks,
+		"Shell":    shellci.Tasks,
+		"Markdown": markdownci.Tasks,
 	} {
 		tasks := getTasksFunc(repo)
 		if len(tasks) > 0 {
