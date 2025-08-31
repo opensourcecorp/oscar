@@ -3,6 +3,7 @@ package ci
 import (
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	pythonci "github.com/opensourcecorp/oscar/internal/ci/python"
 	shellci "github.com/opensourcecorp/oscar/internal/ci/shell"
 	ciutil "github.com/opensourcecorp/oscar/internal/ci/util"
+	"github.com/opensourcecorp/oscar/internal/consts"
 	igit "github.com/opensourcecorp/oscar/internal/git"
 	iprint "github.com/opensourcecorp/oscar/internal/print"
 )
@@ -53,6 +55,17 @@ func GetCITaskMap() (TaskMap, error) {
 func Run() (err error) {
 	runStartTime := time.Now()
 
+	// Handle system init
+	if err := ciutil.InitSystem(); err != nil {
+		return fmt.Errorf("initializing system: %w", err)
+	}
+	// The mise config that oscar uses is written during init, so be sure to defer its removal here
+	defer func() {
+		if rmErr := os.Remove(consts.MiseConfigFileName); rmErr != nil {
+			err = errors.Join(err, fmt.Errorf("removing mise config file: %w", rmErr))
+		}
+	}()
+
 	var (
 		// Vars for determining text padding in output banners
 		longestLanguageNameLength int
@@ -76,18 +89,6 @@ func Run() (err error) {
 
 	iprint.Debugf("longestLanguageNameLength: %d\n", longestLanguageNameLength)
 	iprint.Debugf("longestInfoTextLength: %d\n", longestInfoTextLength)
-
-	// Handle system init
-	if err := ciutil.InitSystem(); err != nil {
-		return fmt.Errorf("initializing system: %w", err)
-	}
-
-	// Handle all other inits
-	fmt.Printf("Initializing the host, this might take some time...\n")
-	if err := ciutil.RunCommand([]string{"mise", "install"}); err != nil {
-		return fmt.Errorf("running mise install: %w", err)
-	}
-	fmt.Printf("Done with initialization!\n\n")
 
 	// For tracking any changes to Git status etc. after each Task runs
 	git, err := igit.New()
@@ -131,7 +132,7 @@ func Run() (err error) {
 			}
 
 			if runErr != nil || gitStatusHasChanged {
-				iprint.Errorf("FAILED!\n")
+				iprint.Errorf("FAILED! %s\n", ciutil.DurationString(taskStartTime))
 				iprint.Errorf("\n")
 
 				if runErr != nil {
@@ -152,14 +153,14 @@ func Run() (err error) {
 					return fmt.Errorf("internal error: %w", err)
 				}
 			} else {
-				fmt.Printf("PASSED (t: %s)\n", time.Since(taskStartTime).Round(time.Second/1000).String())
+				fmt.Printf("PASSED %s\n", ciutil.DurationString(taskStartTime))
 			}
 		}
 	}
 
 	if len(failures) > 0 {
 		iprint.Errorf("\n================================================================\n")
-		iprint.Errorf("The following checks failed and/or caused a git diff:\n")
+		iprint.Errorf("The following checks failed and/or caused a git diff: %s\n", ciutil.DurationString(runStartTime))
 		for _, f := range failures {
 			iprint.Errorf("- %s\n", f)
 		}
@@ -167,7 +168,7 @@ func Run() (err error) {
 		return errors.New("one or more CI checks failed")
 	}
 
-	fmt.Printf("All checks passed! (finished in %s)\n", time.Since(runStartTime).Round(time.Second/1000).String())
+	fmt.Printf("All checks passed! %s\n", ciutil.DurationString(runStartTime))
 
 	return err
 }

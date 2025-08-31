@@ -3,20 +3,25 @@ package ciutil
 import (
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"slices"
 	"strings"
+	"time"
 
+	"github.com/opensourcecorp/oscar"
+	"github.com/opensourcecorp/oscar/internal/consts"
 	iprint "github.com/opensourcecorp/oscar/internal/print"
 )
 
-// InitSystem runs init checks against the host itself, so that other checks can run.
+// InitSystem runs setup & checks against the host itself, so that oscar can run.
 func InitSystem() error {
+	fmt.Printf("Initializing the host, this might take some time... ")
+	startTime := time.Now()
+
 	requiredSystemCommands := [][]string{
 		{"bash", "--version"},
 		{"git", "--version"},
-		{"curl", "--version"},
-		{"tar", "--version"},
 	}
 
 	for _, cmd := range requiredSystemCommands {
@@ -28,6 +33,38 @@ func InitSystem() error {
 			)
 		}
 	}
+
+	if err := os.MkdirAll(consts.OscarHome, 0755); err != nil {
+		return fmt.Errorf(
+			"internal error when creating oscar home directory '%s': %v",
+			consts.OscarHome, err,
+		)
+	}
+
+	for name, value := range consts.MiseVars {
+		if err := os.Setenv(name, value); err != nil {
+			return fmt.Errorf(
+				"internal error when setting mise env var '%s': %v",
+				name, err,
+			)
+		}
+	}
+
+	cfgFileContents, err := oscar.Files.ReadFile("mise.toml")
+	if err != nil {
+		return fmt.Errorf("reading embedded file contents: %w", err)
+	}
+
+	if err := os.WriteFile(consts.MiseConfigFileName, cfgFileContents, 0644); err != nil {
+		return fmt.Errorf("writing config file: %w", err)
+	}
+
+	// Init for task runs
+	if err := RunCommand([]string{"mise", "install"}); err != nil {
+		return fmt.Errorf("running mise install: %w", err)
+	}
+
+	fmt.Printf("Done! %s\n\n", DurationString(startTime))
 
 	return nil
 }
@@ -101,6 +138,10 @@ func GetRepoComposition() (Repo, error) {
 	iprint.Debugf("repo composition: %+v\n", repo)
 
 	return repo, nil
+}
+
+func DurationString(t time.Time) string {
+	return fmt.Sprintf("(t: %s)", time.Since(t).Round(time.Second/1000).String())
 }
 
 func filesExistInTree(findScript string) (bool, error) {

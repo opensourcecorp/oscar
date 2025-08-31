@@ -18,12 +18,12 @@ Before getting started, note that `oscar` has a few host-system runtime dependen
 may someday be replaced natively in the future, but some are integral to how `oscar` works
 internally.
 
+* [`mise`](https://mise.jdx.dev) (though this will be installed for you if it is missing)
 * `bash` (version 4.4+)
 * `git`
-* `curl`
-* `tar`
 
 TODO:
 
+* Check if `mise` is installed, and install it if not
 * Run as image from ghcr
 * etc.
