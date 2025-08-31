@@ -1,0 +1,36 @@
+# Config file for revive Go linter
+# This was initially pulled from defaults.toml found here:
+# https://github.com/mgechev/revive/blob/251470be6ab08b06e86f9a2d0178cef5f8bbca97/defaults.toml
+confidence = 0.8
+errorCode = 1
+warningCode = 1
+
+ignoreGeneratedHeader = false
+severity = "warning"
+
+exclude = []
+
+[rule.blank-imports]
+[rule.context-as-argument]
+[rule.context-keys-type]
+[rule.dot-imports]
+[rule.empty-block]
+[rule.error-naming]
+[rule.error-return]
+[rule.error-strings]
+[rule.errorf]
+[rule.exported]
+[rule.increment-decrement]
+Disabled = true
+[rule.indent-error-flow]
+[rule.package-comments]
+[rule.range]
+[rule.receiver-naming]
+[rule.redefines-builtin-id]
+[rule.superfluous-else]
+[rule.time-naming]
+[rule.unexported-return]
+[rule.unreachable-code]
+[rule.unused-parameter]
+[rule.var-declaration]
+[rule.var-naming]

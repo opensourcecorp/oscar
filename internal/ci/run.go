@@ -3,102 +3,138 @@ package ci
 import (
 	"errors"
 	"fmt"
-	"os/exec"
+	"os"
 	"strings"
+	"time"
 
+	goci "github.com/opensourcecorp/oscar/internal/ci/go"
+	markdownci "github.com/opensourcecorp/oscar/internal/ci/markdown"
+	pythonci "github.com/opensourcecorp/oscar/internal/ci/python"
+	shellci "github.com/opensourcecorp/oscar/internal/ci/shell"
+	ciutil "github.com/opensourcecorp/oscar/internal/ci/util"
+	"github.com/opensourcecorp/oscar/internal/consts"
 	igit "github.com/opensourcecorp/oscar/internal/git"
 	iprint "github.com/opensourcecorp/oscar/internal/print"
 )
 
+// TaskMap is a less-verbose type alias for mapping language names to function signatures that
+// return a language's tasks.
+type TaskMap map[string][]ciutil.Tasker
+
+// GetCITaskMap assembles the overall list of CI tasks, keyed by their language/tooling name
+func GetCITaskMap() (TaskMap, error) {
+	repo, err := ciutil.GetRepoComposition()
+	if err != nil {
+		return nil, fmt.Errorf("getting repo composition: %w", err)
+	}
+
+	out := make(TaskMap, 0)
+	for langName, getTasksFunc := range map[string]func(ciutil.Repo) []ciutil.Tasker{
+		"Go":       goci.Tasks,
+		"Python":   pythonci.Tasks,
+		"Shell":    shellci.Tasks,
+		"Markdown": markdownci.Tasks,
+	} {
+		tasks := getTasksFunc(repo)
+		if len(tasks) > 0 {
+			out[langName] = tasks
+		}
+	}
+
+	if len(out) > 0 {
+		fmt.Print(repo.String())
+		iprint.Debugf("GetCITasks output: %+v\n", out)
+	}
+
+	return out, nil
+}
+
 // Run defines the behavior for running all CI tasks for the repository.
 func Run() (err error) {
+	runStartTime := time.Now()
+
+	// Handle system init
+	if err := ciutil.InitSystem(); err != nil {
+		return fmt.Errorf("initializing system: %w", err)
+	}
+	// The mise config that oscar uses is written during init, so be sure to defer its removal here
+	defer func() {
+		if rmErr := os.Remove(consts.MiseConfigFileName); rmErr != nil {
+			err = errors.Join(err, fmt.Errorf("removing mise config file: %w", rmErr))
+		}
+	}()
+
 	var (
-		// Some sentinel errors to cut down on typing or looking silly elsewhere. Note that since
-		// all errors should be logged in this function (and not in their caller, unless during
-		// debug), their values aren't actually going to ever be printed anywhere.
-		errInternal       = errors.New("internal error")
-		errCIChecksFailed = errors.New("one or more CI checks failed")
-
-		// All the CI configs that will be looped over
-		ciConfigs = GetCIConfigs()
-
 		// Vars for determining text padding in output banners
 		longestLanguageNameLength int
 		longestInfoTextLength     int
 	)
 
-	for _, c := range ciConfigs {
-		longestLanguageNameLength = max(longestLanguageNameLength, len(c.LanguageName))
-		for _, t := range c.Tasks {
-			longestInfoTextLength = max(longestInfoTextLength, len(t.InfoText))
+	// All the CI tasks that will be looped over. Will also print a summary of discovered file
+	// types.
+	ciTaskMap, err := GetCITaskMap()
+	if err != nil {
+		return fmt.Errorf("getting CI tasks: %w", err)
+	}
+
+	// Log padding setup
+	for lang, tasks := range ciTaskMap {
+		longestLanguageNameLength = max(longestLanguageNameLength, len(lang))
+		for _, t := range tasks {
+			longestInfoTextLength = max(longestInfoTextLength, len(t.InfoText()))
 		}
 	}
 
 	iprint.Debugf("longestLanguageNameLength: %d\n", longestLanguageNameLength)
 	iprint.Debugf("longestInfoTextLength: %d\n", longestInfoTextLength)
 
-	// Handle inits
-	fmt.Printf("Initializing the host, this might take some time...\n")
-	for _, c := range ciConfigs {
-		for _, t := range c.Tasks {
-			if t.InitFunc != nil {
-				if err := t.InitFunc(); err != nil {
-					iprint.Errorf(
-						"running initialization for '%s:<%s>: %v",
-						c.LanguageName, t.InfoText, err,
-					)
-					return errInternal
-				}
-			}
-		}
-	}
-	fmt.Printf("Done!\n\n")
-
 	// For tracking any changes to Git status etc. after each Task runs
 	git, err := igit.New()
 	if err != nil {
-		iprint.Errorf("Internal Error: %v\n", err)
-		return errInternal
+		return fmt.Errorf("internal error: %w", err)
 	}
 
+	// Keeps track of all task failures
 	failures := make([]string, 0)
-	for _, c := range ciConfigs {
-		langNameBannerPadding := strings.Repeat("=", longestLanguageNameLength-len(c.LanguageName)/2)
+	for lang, tasks := range ciTaskMap {
+		langNameBannerPadding := strings.Repeat("=", longestLanguageNameLength-len(lang)/2)
 		fmt.Printf(
 			"============%s %s %s============\n",
-			langNameBannerPadding, c.LanguageName, langNameBannerPadding,
+			langNameBannerPadding, lang, langNameBannerPadding,
 		)
 
-		for _, t := range c.Tasks {
-			if t.RunScript == nil {
+		for _, t := range tasks {
+			// NOTE: if no InfoText() method is provided, it's probably a lang-wide init func, so skip it
+			if t.InfoText() == "" {
 				continue
 			}
 
-			taskBannerPadding := strings.Repeat(".", longestInfoTextLength-len(t.InfoText))
+			taskStartTime := time.Now()
+
+			taskBannerPadding := strings.Repeat(".", longestInfoTextLength-len(t.InfoText()))
 			// NOTE: no trailing newline on purpose
-			fmt.Printf("> %s %s............", t.InfoText, taskBannerPadding)
+			fmt.Printf("> %s %s............", t.InfoText(), taskBannerPadding)
 
-			cmd := exec.Command(t.RunScript[0], t.RunScript[1:]...)
-
-			// NOTE: this error is checked later
-			output, runErr := cmd.CombinedOutput()
+			// NOTE: this error is checked later, when we can check the Run, Post, and git-diff
+			// potential errors together
+			var runErr error
+			runErr = errors.Join(runErr, t.Run())
+			runErr = errors.Join(runErr, t.Post())
 
 			if err := git.Update(); err != nil {
-				iprint.Errorf("Internal Error: %v\n", err)
-				return errInternal
+				return fmt.Errorf("internal error: %w", err)
 			}
 			gitStatusHasChanged, err := git.StatusHasChanged()
 			if err != nil {
-				iprint.Errorf("Internal Error: %v\n", err)
-				return errInternal
+				return fmt.Errorf("internal error: %w", err)
 			}
 
 			if runErr != nil || gitStatusHasChanged {
-				iprint.Errorf("FAILED!\n")
+				iprint.Errorf("FAILED! (%s)\n", ciutil.RunDurationString(taskStartTime))
 				iprint.Errorf("\n")
 
 				if runErr != nil {
-					iprint.Errorf("%s\n", string(output))
+					iprint.Errorf("%v\n", runErr)
 				}
 
 				if gitStatusHasChanged {
@@ -107,31 +143,30 @@ func Run() (err error) {
 					iprint.Errorf("\n")
 				}
 
-				failures = append(failures, fmt.Sprintf("%s :: %s", c.LanguageName, t.InfoText))
+				failures = append(failures, fmt.Sprintf("%s :: %s", lang, t.InfoText()))
 
 				// Also need to reset the baseline status
 				git, err = igit.New()
 				if err != nil {
-					iprint.Errorf("Internal Error: %v\n", err)
-					return errInternal
+					return fmt.Errorf("internal error: %w", err)
 				}
 			} else {
-				fmt.Printf("PASSED\n")
+				fmt.Printf("PASSED (%s)\n", ciutil.RunDurationString(taskStartTime))
 			}
 		}
 	}
 
 	if len(failures) > 0 {
 		iprint.Errorf("\n================================================================\n")
-		iprint.Errorf("The following checks failed and/or caused a git diff:\n")
+		iprint.Errorf("The following checks failed and/or caused a git diff: (%s)\n", ciutil.RunDurationString(runStartTime))
 		for _, f := range failures {
 			iprint.Errorf("- %s\n", f)
 		}
 		iprint.Errorf("================================================================\n\n")
-		return errCIChecksFailed
+		return errors.New("one or more CI checks failed")
 	}
 
-	fmt.Printf("All checks passed!\n")
+	fmt.Printf("All checks passed! (%s)\n", ciutil.RunDurationString(runStartTime))
 
 	return err
 }

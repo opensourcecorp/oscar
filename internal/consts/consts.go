@@ -10,6 +10,10 @@ import (
 const (
 	// DebugEnvVarName is for enabling debug logs etc.
 	DebugEnvVarName = "OSC_DEBUG"
+
+	// MiseVersion is the default version of mise to install if not present. Can be overridden via
+	// the `MISE_VERSION` env var, which is checked elsewhere.
+	MiseVersion = "v2025.8.21"
 )
 
 var (
@@ -17,28 +21,19 @@ var (
 	OscarHome = filepath.Join(os.Getenv("HOME"), ".oscar")
 	// OscarHomeBin is the directory where any commands that oscar installs for itself will live.
 	OscarHomeBin = filepath.Join(OscarHome, "bin")
-)
 
-var (
-	// GoCIVersions stores Go CI tool versions.
-	GoCIVersions = struct {
-		Staticcheck string
-		Revive      string
-		Errcheck    string
-		Goimports   string
-		Govulncheck string
-	}{
-		Staticcheck: "2025.1.1",
-		Revive:      "v1.11.0",
-		Errcheck:    "v1.9.0",
-		Goimports:   "v0.35.0",
-		Govulncheck: "latest", // yes, on purpose
-	}
+	// MiseBinPath is the absolute path to the mise binary, if oscar is the one installing it.
+	MiseBinPath = filepath.Join(OscarHomeBin, "mise")
 
-	// PythonCIVersions stores Python CI tool versions.
-	PythonCIVersions = struct {
-		UV string
-	}{
-		UV: "0.8.4",
+	// MiseConfigFileName is the basename of the mise configuration file that oscar uses
+	MiseConfigFileName = "mise.oscar.toml"
+
+	// MiseEnvVars maps mise's env var keys to their desired values.
+	MiseEnvVars = map[string]string{
+		"MISE_DATA_DIR":  filepath.Join(OscarHome, "share", "mise"),
+		"MISE_CACHE_DIR": filepath.Join(OscarHome, "cache", "mise"),
+		"MISE_STATE_DIR": filepath.Join(OscarHome, "state", "mise"),
+		// used to discover/use mise.<MISE_ENV>.toml, which is the value of [MiseConfigFileName]
+		"MISE_ENV": "oscar",
 	}
 )

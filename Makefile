@@ -1,5 +1,12 @@
 SHELL = /usr/bin/env bash -euo pipefail
 
+# Conditionally use mise if its available, otherwise expect the host to have any needed tools on $PATH
+RUN =
+MISE := $(shell command -v mise || command -v "$${HOME}/.oscar/bin/mise")
+ifneq ($(MISE),)
+RUN = $(MISE) exec --
+endif
+
 BINNAME := oscar
 BINPATH := ./cmd/$(BINNAME)
 
@@ -14,21 +21,24 @@ SHELL = /usr/bin/env bash -euo pipefail
 all: ci
 
 ci: clean
-	@go run ./cmd/oscar/main.go ci
+	@$(RUN) go run ./cmd/$(BINNAME)/main.go ci
 
 # test is just an alias for ci
 test: ci
 
 ci-container:
-	@docker build \
+	@$(DOCKER) build \
+		--build-arg http_proxy="$${http_proxy}" \
+		--build-arg https_proxy="$${https_proxy}" \
 		--build-arg GO_VERSION="$$(awk '/^go/ { print $$2 }' go.mod)" \
-		--build-arg CI=true \
-		-f ./Containerfile -t $(BINNAME)-test:latest \
+		-f ./Containerfile \
+		-t $(BINNAME)-test:latest \
 		.
 
 build: clean
-	@mkdir -p ./build/$$(go env GOOS)-$$(go env GOARCH)
-	@go build -o ./build/$$(go env GOOS)-$$(go env GOARCH)/$(BINNAME) $(BINPATH)
+	@mkdir -p ./build/$$($(RUN) go env GOOS)-$$($(RUN) go env GOARCH)
+	@$(RUN) go build -o ./build/$(BINNAME) $(BINPATH)
+	@printf 'built to %s\n' ./build/$(BINNAME)
 
 xbuild: clean
 	@for target in \
@@ -43,7 +53,7 @@ xbuild: clean
 		outdir=build/"$${GOOS}-$${GOARCH}" ; \
 		mkdir -p "$${outdir}" ; \
 		printf "Building for %s-%s into build/ ...\n" "$${GOOS}" "$${GOARCH}" ; \
-		GOOS="$${GOOS}" GOARCH="$${GOARCH}" go build -o "$${outdir}"/$(BINNAME) $(BINPATH) ; \
+		GOOS="$${GOOS}" GOARCH="$${GOARCH}" $(RUN) go build -o "$${outdir}"/$(BINNAME) $(BINPATH) ; \
 	done
 
 package: xbuild
@@ -57,18 +67,18 @@ package: xbuild
 clean:
 	@rm -rf \
 		/tmp/$(BINNAME)-tests \
-		*cache* \
-		.*cache* \
-		*.log \
-		build/ \
-		dist/ \
-		$(BINNAME) \
+		./*cache* \
+		./.*cache* \
+		./*.log \
+		./build/ \
+		./dist/ \
+		./$(BINNAME) \
 		./main
 
-build-image: clean
-	@$(DOCKER) build \
-		--progress plain \
-		--build-arg GO_VERSION="$$(awk '/^go/ { print $$2 }' go.mod)" \
-		-f Containerfile \
-		-t $(OCI_REGISTRY)/$(OCI_REGISTRY_OWNER)/$(BINNAME):latest \
-		.
+image: clean
+	@export BUILDKIT_PROGRESS=plain && \
+	export GO_VERSION="$$(awk '/^go/ { print $$2 }' go.mod)" && \
+	$(DOCKER) compose build
+
+run-image:
+	@$(DOCKER) compose run $(BINNAME)

@@ -4,7 +4,9 @@ package oscar
 
 import "embed"
 
-// Files holds any embedded files for use elsewhere across the codebase.
+// Files holds any embedded files for use elsewhere across the codebase. Notably, it also holds the
+// 'mise.toml' file that is used for not only oscar's own development config but also for its
+// internals.
 //
-//go:embed VERSION
+//go:embed VERSION mise.toml
 var Files embed.FS

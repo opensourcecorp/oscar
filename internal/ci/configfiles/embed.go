@@ -1,0 +1,10 @@
+// Package ciconfig is used for storing embeddable config files for various CI tools, that are
+// injected at runtime.
+package ciconfig
+
+import "embed"
+
+// Files stores config files for each CI tool.
+//
+//go:embed *.conf *.toml *.yaml
+var Files embed.FS

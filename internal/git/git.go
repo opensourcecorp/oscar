@@ -15,7 +15,8 @@ type Git struct {
 	// BaselineStatusForCI is used to check against when running CI checks, so that each CI task can
 	// see if it introduced changes.
 	BaselineStatusForCI Status
-	CurrentStatus       Status
+	// CurrentStatus is the latest-available Git status, which may differ from the baseline.
+	CurrentStatus Status
 }
 
 // Status holds various pieces of information about Git status.
@@ -40,7 +41,7 @@ func New() (*Git, error) {
 func (g *Git) Update() error {
 	status, err := getRawStatus()
 	if err != nil {
-		return err
+		return fmt.Errorf("getting Git status: %w", err)
 	}
 
 	untrackedFiles := make([]string, 0)
@@ -87,6 +88,8 @@ func (g *Git) StatusHasChanged() (bool, error) {
 	return statusChanged, nil
 }
 
+// getRawStatus returns a slightly-modified "git status" output, so that calling tools can parse it
+// more easily.
 func getRawStatus() (Status, error) {
 	cmd := exec.Command("git", "status", "--porcelain")
 	outputBytes, err := cmd.CombinedOutput()
@@ -118,6 +121,7 @@ func getRawStatus() (Status, error) {
 	}, nil
 }
 
+// updateStatus updates the tracked Git status so that it can be compared against the baseline.
 func (g *Git) updateStatus() error {
 	// So any future debug logs have a line break in them
 	iprint.Debugf("\n")
@@ -126,7 +130,7 @@ func (g *Git) updateStatus() error {
 
 	status, err := getRawStatus()
 	if err != nil {
-		return err
+		return fmt.Errorf("getting Git status: %w", err)
 	}
 
 	diff := make([]string, 0)

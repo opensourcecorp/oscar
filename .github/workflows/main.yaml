@@ -1,16 +1,18 @@
 # I mostly copied this straight from here:
 # https://docs.github.com/en/actions/publishing-packages/publishing-docker-images
 
-# oscar's tests, etc. run during image build, so that's all this pipeline does
-
 name: main
 
 on:
   push:
-    branches: ["**"]
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  main:
+  ci:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -18,17 +20,18 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # release v5.0.0
       - name: Install system packages
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            curl \
             make
+      - name: Set up mise
+        uses: jdx/mise-action@5ac50f778e26fac95da98d50503682459e86d566 # release v3.2.0
+        with:
+          version: "2025.8.1"
+          install: true # runs `mise install`
+          cache: true
       - name: Run CI
         run: make ci
 
