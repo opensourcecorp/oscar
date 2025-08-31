@@ -1,5 +1,7 @@
 SHELL = /usr/bin/env bash -euo pipefail
 
+RUN = mise exec --
+
 BINNAME := oscar
 BINPATH := ./cmd/$(BINNAME)
 
@@ -14,13 +16,13 @@ SHELL = /usr/bin/env bash -euo pipefail
 all: ci
 
 ci: clean
-	@go run ./cmd/oscar/main.go ci
+	@$(RUN) go run ./cmd/oscar/main.go ci
 
 # test is just an alias for ci
 test: ci
 
 ci-container:
-	@docker build \
+	@$(DOCKER) build \
 		--build-arg http_proxy="$${http_proxy}" \
 		--build-arg https_proxy="$${https_proxy}" \
 		--build-arg GO_VERSION="$$(awk '/^go/ { print $$2 }' go.mod)" \
@@ -29,8 +31,8 @@ ci-container:
 		.
 
 build: clean
-	@mkdir -p ./build/$$(go env GOOS)-$$(go env GOARCH)
-	@go build -o ./build/$(BINNAME) $(BINPATH)
+	@mkdir -p ./build/$$($(RUN) go env GOOS)-$$($(RUN) go env GOARCH)
+	@$(RUN) go build -o ./build/$(BINNAME) $(BINPATH)
 
 xbuild: clean
 	@for target in \
@@ -45,7 +47,7 @@ xbuild: clean
 		outdir=build/"$${GOOS}-$${GOARCH}" ; \
 		mkdir -p "$${outdir}" ; \
 		printf "Building for %s-%s into build/ ...\n" "$${GOOS}" "$${GOARCH}" ; \
-		GOOS="$${GOOS}" GOARCH="$${GOARCH}" go build -o "$${outdir}"/$(BINNAME) $(BINPATH) ; \
+		GOOS="$${GOOS}" GOARCH="$${GOARCH}" $(RUN) go build -o "$${outdir}"/$(BINNAME) $(BINPATH) ; \
 	done
 
 package: xbuild
@@ -68,7 +70,7 @@ clean:
 		./main \
 		./oscar/
 
-build-image: clean
+image: clean
 	@export BUILDKIT_PROGRESS=plain && \
 	export GO_VERSION="$$(awk '/^go/ { print $$2 }' go.mod)" && \
 	$(DOCKER) compose build

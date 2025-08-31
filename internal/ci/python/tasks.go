@@ -2,16 +2,12 @@ package pythonci
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
-	"strings"
+	"slices"
 
 	ciutil "github.com/opensourcecorp/oscar/internal/ci/util"
-	"github.com/opensourcecorp/oscar/internal/consts"
 )
 
 type (
-	baseInitTask   struct{}
 	buildTask      struct{}
 	ruffLintTask   struct{}
 	ruffFormatTask struct{}
@@ -20,7 +16,6 @@ type (
 )
 
 var tasks = []ciutil.Tasker{
-	baseInitTask{},
 	buildTask{},
 	ruffLintTask{},
 	ruffFormatTask{},
@@ -38,73 +33,7 @@ func Tasks(repo ciutil.Repo) []ciutil.Tasker {
 }
 
 // InfoText implements [ciutil.Tasker.InfoText].
-func (t baseInitTask) InfoText() string { return "" }
-
-// Init implements [ciutil.Tasker.Init].
-func (t baseInitTask) Init() error {
-	defer fmt.Println("Done.")
-	fmt.Printf("- Python: Installing uv... ")
-
-	if ciutil.IsToolUpToDate(uv) {
-		return nil
-	}
-
-	hostInput := ciutil.HostInfoInput{
-		OSLinux:     "unknown",
-		KernelLinux: "linux-gnu",
-		OSMacOS:     "apple",
-		KernelMacOS: "darwin",
-		ArchAMD64:   "x86_64",
-		ArchARM64:   "aarch64",
-	}
-
-	host, err := ciutil.GetHostInfo(hostInput)
-	if err != nil {
-		return fmt.Errorf("getting host info during init: %w", err)
-	}
-
-	// This will also be the name of the directory once extracted from the archive
-	releaseURL := fmt.Sprintf(
-		uv.RemotePath,
-		uv.Version, host.Arch, host.OS, host.Kernel,
-	)
-
-	// Grab the last element of the download URL (minus the extension) to get the unpacked archive
-	// directory name
-	archiveName := strings.ReplaceAll(filepath.Base(releaseURL), ".tar.gz", "")
-
-	downloadedFile := filepath.Join(os.TempDir(), "uv.tar.gz")
-
-	installCmd := []string{"bash", "-c",
-		fmt.Sprintf(`
-				curl -fsSL -o %s %s
-				tar -C %s -xzf %s
-				mv %s/%s/{uv,uvx} %s/
-			`,
-			downloadedFile, releaseURL,
-			os.TempDir(), downloadedFile,
-			os.TempDir(), archiveName, consts.OscarHomeBin,
-		),
-	}
-
-	if err := ciutil.RunCommand(installCmd); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Run implements [ciutil.Tasker.Run].
-func (t baseInitTask) Run() error { return nil }
-
-// Post implements [ciutil.Tasker.Post].
-func (t baseInitTask) Post() error { return nil }
-
-// InfoText implements [ciutil.Tasker.InfoText].
 func (t buildTask) InfoText() string { return "Build" }
-
-// Init implements [ciutil.Tasker.Init].
-func (t buildTask) Init() error { return nil }
 
 // Run implements [ciutil.Tasker.Run].
 func (t buildTask) Run() error {
@@ -121,12 +50,9 @@ func (t buildTask) Post() error { return nil }
 // InfoText implements [ciutil.Tasker.InfoText].
 func (t ruffLintTask) InfoText() string { return "Lint (ruff)" }
 
-// Init implements [ciutil.Tasker.Init].
-func (t ruffLintTask) Init() error { return nil }
-
 // Run implements [ciutil.Tasker.Run].
 func (t ruffLintTask) Run() error {
-	if err := ciutil.RunVersionedCommand(ruffLint, []string{"check", "--fix", "./src"}); err != nil {
+	if err := pyRun(ruffLint, "check", "--fix", "./src"); err != nil {
 		return err
 	}
 
@@ -139,15 +65,11 @@ func (t ruffLintTask) Post() error { return nil }
 // InfoText implements [ciutil.Tasker.InfoText].
 func (t ruffFormatTask) InfoText() string { return "Format (ruff)" }
 
-// Init implements [ciutil.Tasker.Init].
-func (t ruffFormatTask) Init() error { return nil }
-
 // Run implements [ciutil.Tasker.Run].
 func (t ruffFormatTask) Run() error {
-	if err := ciutil.RunVersionedCommand(ruffFormat, []string{"format", "./src"}); err != nil {
+	if err := pyRun(ruffFormat, "format", "./src"); err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -157,12 +79,9 @@ func (t ruffFormatTask) Post() error { return nil }
 // InfoText implements [ciutil.Tasker.InfoText].
 func (t pydoclintTask) InfoText() string { return "Lint (pydoclint)" }
 
-// Init implements [ciutil.Tasker.Init].
-func (t pydoclintTask) Init() error { return nil }
-
 // Run implements [ciutil.Tasker.Run].
 func (t pydoclintTask) Run() error {
-	if err := ciutil.RunVersionedCommand(pydoclint, []string{"./src"}); err != nil {
+	if err := pyRun(pydoclint, "./src"); err != nil {
 		return err
 	}
 
@@ -175,12 +94,9 @@ func (t pydoclintTask) Post() error { return nil }
 // InfoText implements [ciutil.Tasker.InfoText].
 func (t mypyTask) InfoText() string { return "Type-check (mypy)" }
 
-// Init implements [ciutil.Tasker.Init].
-func (t mypyTask) Init() error { return nil }
-
 // Run implements [ciutil.Tasker.Run].
 func (t mypyTask) Run() error {
-	if err := ciutil.RunVersionedCommand(mypy, []string{"./src"}); err != nil {
+	if err := pyRun(mypy, "./src"); err != nil {
 		return err
 	}
 
@@ -189,3 +105,16 @@ func (t mypyTask) Run() error {
 
 // Post implements [ciutil.Tasker.Post].
 func (t mypyTask) Post() error { return nil }
+
+// pyRun is a wrapper for "uvx"
+func pyRun(t ciutil.Tool, trailingArgs ...string) error {
+	args := slices.Concat(
+		[]string{"uvx", fmt.Sprintf("%s@%s", t.Name, t.Version)},
+		trailingArgs,
+	)
+	if err := ciutil.RunCommand(args); err != nil {
+		return fmt.Errorf("running 'uvx': %w", err)
+	}
+
+	return nil
+}

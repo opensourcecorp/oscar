@@ -7,6 +7,8 @@ import (
 	"time"
 
 	goci "github.com/opensourcecorp/oscar/internal/ci/go"
+	markdownci "github.com/opensourcecorp/oscar/internal/ci/markdown"
+	nodejsci "github.com/opensourcecorp/oscar/internal/ci/nodejs"
 	pythonci "github.com/opensourcecorp/oscar/internal/ci/python"
 	shellci "github.com/opensourcecorp/oscar/internal/ci/shell"
 	ciutil "github.com/opensourcecorp/oscar/internal/ci/util"
@@ -27,11 +29,11 @@ func GetCITaskMap() (TaskMap, error) {
 
 	taskMap := make(TaskMap, 0)
 	for langName, getTasksFunc := range map[string]func(ciutil.Repo) []ciutil.Tasker{
-		"Go":     goci.Tasks,
-		"Python": pythonci.Tasks,
-		"Shell":  shellci.Tasks,
-		// "Markdown":   markdownci.Tasks,
-		// "JavaScript": nodejsci.Tasks,
+		"Go":         goci.Tasks,
+		"Python":     pythonci.Tasks,
+		"Shell":      shellci.Tasks,
+		"Markdown":   markdownci.Tasks,
+		"JavaScript": nodejsci.Tasks,
 	} {
 		tasks := getTasksFunc(repo)
 		if len(tasks) > 0 {
@@ -81,13 +83,9 @@ func Run() (err error) {
 	}
 
 	// Handle all other inits
-	fmt.Printf("Initializing the host for discovered file types, this might take some time...\n")
-	for _, tasks := range ciTaskMap {
-		for _, t := range tasks {
-			if err := t.Init(); err != nil {
-				return fmt.Errorf("running init for '%s': %w", t.InfoText(), err)
-			}
-		}
+	fmt.Printf("Initializing the host, this might take some time...\n")
+	if err := ciutil.RunCommand([]string{"mise", "install"}); err != nil {
+		return fmt.Errorf("running mise install: %w", err)
 	}
 	fmt.Printf("Done with initialization!\n\n")
 
@@ -118,8 +116,11 @@ func Run() (err error) {
 			// NOTE: no trailing newline on purpose
 			fmt.Printf("> %s %s............", t.InfoText(), taskBannerPadding)
 
-			// NOTE: this error is checked later
-			runErr := t.Run()
+			// NOTE: this error is checked later, when we can check the Run, Post, and git-diff
+			// potential errors together
+			var runErr error
+			runErr = errors.Join(runErr, t.Run())
+			runErr = errors.Join(runErr, t.Post())
 
 			if err := git.Update(); err != nil {
 				return fmt.Errorf("internal error: %w", err)
@@ -152,10 +153,6 @@ func Run() (err error) {
 				}
 			} else {
 				fmt.Printf("PASSED (t: %s)\n", time.Since(taskStartTime).Round(time.Second/1000).String())
-			}
-			if err := t.Post(); err != nil {
-				iprint.Errorf("running task post-steps: %v\n", err)
-				failures = append(failures, fmt.Sprintf("%s :: %s", lang, t.InfoText()))
 			}
 		}
 	}

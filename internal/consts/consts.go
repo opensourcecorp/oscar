@@ -24,4 +24,12 @@ var (
 	OscarHome = filepath.Join(os.Getenv("HOME"), ".oscar")
 	// OscarHomeBin is the directory where any commands that oscar installs for itself will live.
 	OscarHomeBin = filepath.Join(OscarHome, "bin")
+
+	MiseConfigFileName = "mise.oscar.toml"
+
+	MiseVars = map[string]string{
+		"MISE_DATA_DIR":  filepath.Join(OscarHome, "share", "mise"),
+		"MISE_CACHE_DIR": filepath.Join(OscarHome, "cache", "mise"),
+		"MISE_ENV":       "oscar",
+	}
 )

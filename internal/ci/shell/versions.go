@@ -5,7 +5,7 @@ import (
 )
 
 var (
-	shellcheck = ciutil.VersionedTool{
+	shellcheck = ciutil.Tool{
 		Name: "shellcheck",
 		// Placeholders are for:
 		// - kernel ("darwin", or "linux")
@@ -13,7 +13,7 @@ var (
 		RemotePath: "https://github.com/koalaman/shellcheck/releases/download/stable/shellcheck-stable.%s.%s.tar.xz",
 		Version:    "v0.11.0",
 	}
-	shfmt = ciutil.VersionedTool{
+	shfmt = ciutil.Tool{
 		Name: "shfmt",
 		// Placeholders are for:
 		// - version
@@ -23,7 +23,7 @@ var (
 		RemotePath: "https://github.com/mvdan/sh/releases/download/%s/shfmt_%s_%s_%s",
 		Version:    "v3.12.0",
 	}
-	bats = ciutil.VersionedTool{
+	bats = ciutil.Tool{
 		Name: "bats",
 		// NOTE: bats just gets cloned then installed with its install script
 		RemotePath: "https://github.com/bats-core/bats-core.git",

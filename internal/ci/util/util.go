@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
-	"regexp"
 	"slices"
 	"strings"
 
@@ -40,71 +39,23 @@ func RunCommand(cmdArgs []string) error {
 		return fmt.Errorf("internal error: not enough arguments passed to RunCommand() -- received: %v", cmdArgs)
 	}
 
-	iprint.Debugf("Running '%v'\n", cmdArgs)
-	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
+	var args []string
+	if cmdArgs[0] == "mise" {
+		args = cmdArgs[1:]
+	} else {
+		args = slices.Concat([]string{"exec", "--"}, cmdArgs)
+	}
+	iprint.Debugf("Running '%v'\n", args)
+
+	cmd := exec.Command("mise", args...)
 	if output, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf(
 			"running '%v': %w, with output:\n%s",
-			cmdArgs, err, string(output),
+			cmd.Args, err, string(output),
 		)
 	}
 
 	return nil
-}
-
-// RunVersionedCommand wraps the [RunCommand] function in this package by passing args for the tool
-// to be run by a different program, like `uvx` or `npx`.
-func RunVersionedCommand(t VersionedTool, args []string) error {
-	allArgs := slices.Concat(
-		t.RunCommand,
-		[]string{fmt.Sprintf("%s@%s", t.Name, t.Version)},
-		args,
-	)
-
-	if err := RunCommand(allArgs); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// IsToolUpToDate checks whether or not a provided [VersionedTool]'s tooling is installed, and
-// up-to-date on the system. This is used to facilitate skipping unecessary installs, etc.
-func IsToolUpToDate(vt VersionedTool) bool {
-	commandUpToDate := true
-
-	version := strings.TrimPrefix(vt.Version, "v")
-	re := regexp.MustCompile(version)
-
-	versionCheckArg := "--version"
-	if vt.VersionCheckArg != "" {
-		versionCheckArg = vt.VersionCheckArg
-	}
-
-	cmd := exec.Command(vt.Name, versionCheckArg)
-	outputRaw, err := cmd.CombinedOutput()
-	output := string(outputRaw)
-	output = strings.Join(strings.Split(output, "\n"), " ")
-	if err != nil || !re.MatchString(output) {
-		commandUpToDate = false
-		if err != nil {
-			iprint.Debugf(
-				"'%s' possibly not found, or does not have a consistent version flag (error output: %s) -- will install\n",
-				vt.Name, output,
-			)
-		} else if !re.MatchString(output) {
-			iprint.Debugf(
-				"'%s' version output was '%s', but wanted '%s' -- will upgrade for oscar usage\n",
-				vt.Name, output, version,
-			)
-		}
-	}
-
-	if commandUpToDate {
-		iprint.Debugf("'%s' found and was up-to-date (version %s)\n", vt.Name, vt.Version)
-	}
-
-	return commandUpToDate
 }
 
 // GetRepoComposition returns a populated [Repo].
