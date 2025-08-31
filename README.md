@@ -69,9 +69,7 @@ Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for details about developing `os
 
 ## Roadmap
 
-* Doc updates
-  * Functionality, rationale for decisions made, development history including switching to `mise`,
-    etc.
+* Add `VERSION` check comparing to `main` as a CI task
 * Workstation setup
   * Have `oscar` manage Makefiles, dotfiles, etc.
 * CI additions
