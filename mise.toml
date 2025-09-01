@@ -1,5 +1,6 @@
 [tools]
 bats = "v1.12.0"
+github-cli = "2.78.0"
 go = "1.25.0"
 markdownlint-cli2 = "v0.18.1"
 # node is required for markdownlint-cli2

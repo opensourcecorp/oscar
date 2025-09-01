@@ -35,15 +35,8 @@ ci-container:
 		-t $(BINNAME)-test:latest \
 		.
 
-build: clean
-	@mkdir -p ./build/$$($(RUN) go env GOOS)-$$($(RUN) go env GOARCH)
-	@$(RUN) go build -o ./build/$(BINNAME) $(BINPATH)
-	@printf 'built to %s\n' ./build/$(BINNAME)
-
-xbuild: clean
-	@bash ./scripts/xbuild.sh
-
-package: xbuild
+deliver: ci
+	@$(RUN) go run ./cmd/$(BINNAME)/main.go deliver
 
 clean:
 	@rm -rf \

@@ -8,9 +8,10 @@ import (
 	"strings"
 
 	"github.com/opensourcecorp/oscar"
-	"github.com/opensourcecorp/oscar/internal/ci"
 	"github.com/opensourcecorp/oscar/internal/consts"
 	iprint "github.com/opensourcecorp/oscar/internal/print"
+	"github.com/opensourcecorp/oscar/internal/tasks/ci"
+	"github.com/opensourcecorp/oscar/internal/tasks/delivery"
 	"github.com/urfave/cli/v3"
 )
 
@@ -20,6 +21,8 @@ const (
 	debugFlagName = "debug"
 
 	ciCommandName = "ci"
+
+	deliverCommandName = "deliver"
 )
 
 // NewRootCmd defines & returns the CLI command used as oscar's entrypoint.
@@ -41,6 +44,11 @@ func NewRootCmd() *cli.Command {
 				Name:   ciCommandName,
 				Usage:  "Runs CI tasks",
 				Action: ciAction,
+			},
+			{
+				Name:   deliverCommandName,
+				Usage:  "Runs Delivery tasks",
+				Action: deliverAction,
 			},
 		},
 	}
@@ -78,17 +86,30 @@ func rootAction(_ context.Context, cmd *cli.Command) error {
 	maybeSetDebug(cmd)
 	iprint.Debugf("oscar root command\n")
 	_ = cli.ShowAppHelp(cmd)
-	return errors.New("\nERROR: oscar requires a subcommand")
+	return errors.New("\nERROR: oscar requires a valid subcommand")
 }
 
-// rootAction defines the logic for oscar's ci subcommand.
+// ciAction defines the logic for oscar's ci subcommand.
 func ciAction(_ context.Context, cmd *cli.Command) error {
 	maybeSetDebug(cmd)
 	iprint.Banner()
 	iprint.Debugf("oscar ci subcommand\n")
 
 	if err := ci.Run(); err != nil {
-		return fmt.Errorf("running CI: %w", err)
+		return fmt.Errorf("running CI tasks: %w", err)
+	}
+
+	return nil
+}
+
+// deliverAction defines the logic for oscar's deliver subcommand.
+func deliverAction(_ context.Context, cmd *cli.Command) error {
+	maybeSetDebug(cmd)
+	iprint.Banner()
+	iprint.Debugf("oscar deliver subcommand\n")
+
+	if err := delivery.Run(); err != nil {
+		return fmt.Errorf("running Delivery tasks: %w", err)
 	}
 
 	return nil

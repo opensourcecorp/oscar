@@ -69,10 +69,10 @@ func InitSystem() error {
 	}
 
 	// Init for task runs
-	if err := RunCommand([]string{consts.MiseBinPath, "trust", consts.MiseConfigFileName}); err != nil {
+	if _, err := RunCommand([]string{consts.MiseBinPath, "trust", consts.MiseConfigFileName}); err != nil {
 		return fmt.Errorf("running mise trust: %w", err)
 	}
-	if err := RunCommand([]string{consts.MiseBinPath, "install"}); err != nil {
+	if _, err := RunCommand([]string{consts.MiseBinPath, "install"}); err != nil {
 		return fmt.Errorf("running mise install: %w", err)
 	}
 
@@ -82,10 +82,11 @@ func InitSystem() error {
 }
 
 // RunCommand takes a string slice containing an entire command & its args to run, and returns a
-// consisten error message in case of failure.
-func RunCommand(cmdArgs []string) error {
+// consistent error message in case of failure. It also returns the command output, in case the
+// caller needs to parse it on their own.
+func RunCommand(cmdArgs []string) (string, error) {
 	if len(cmdArgs) <= 1 {
-		return fmt.Errorf("internal error: not enough arguments passed to RunCommand() -- received: %v", cmdArgs)
+		return "", fmt.Errorf("internal error: not enough arguments passed to RunCommand() -- received: %v", cmdArgs)
 	}
 
 	var args []string
@@ -97,14 +98,15 @@ func RunCommand(cmdArgs []string) error {
 
 	cmd := exec.Command(consts.MiseBinPath, args...)
 	iprint.Debugf("Running '%v'\n", cmd.Args)
-	if output, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf(
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf(
 			"running '%v': %w, with output:\n%s",
 			cmd.Args, err, string(output),
 		)
 	}
 
-	return nil
+	return strings.TrimSuffix(string(output), "\n"), nil
 }
 
 // GetRepoComposition returns a populated [Repo].
@@ -234,8 +236,9 @@ func installMise() (err error) {
 func filesExistInTree(findScript string) (bool, error) {
 	cmd := exec.Command("bash", "-c", fmt.Sprintf(`
 		shopt -s globstar
-		%s
-	`, findScript))
+		%s`,
+		findScript,
+	))
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		// If no files found, that's fine, just report it

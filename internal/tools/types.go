@@ -20,8 +20,16 @@ type Repo struct {
 	HasMarkdown bool
 }
 
-// A Tool is a helper struct used to help other types implementing [Tasker] pass around their tool
-// versioning/installation information.
+// TaskMap is a less-verbose type alias for mapping language names to function signatures that
+// return a language's tasks.
+type TaskMap map[string][]Tasker
+
+// A Tool defines information about a tool used for running oscar's tasks. A Tool should be defined
+// if a language etc. cannot perform the task itself. For example, you would not need a Tool to
+// represent a task that runs "go test", but you *would* need a tool to represent a task that runs
+// the external "staticcheck" linter for Go.
+//
+// Every Tool should implement [Tasker].
 type Tool struct {
 	// The tool's name, used as an identifier. May also be the tool's invocable command, in which
 	// case it can be interpolated as such.
@@ -39,7 +47,7 @@ type Tool struct {
 func (repo Repo) String() string {
 	var out string
 
-	out += "The following file types were found in this repo, and CI checks will be run against them:\n"
+	out += "The following file types were found in this repo, and tasks can/will be run against them:\n"
 
 	if repo.HasGo {
 		out += "- Go\n"

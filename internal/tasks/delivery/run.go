@@ -1,4 +1,4 @@
-package ci
+package delivery
 
 import (
 	"errors"
@@ -11,28 +11,19 @@ import (
 	iprint "github.com/opensourcecorp/oscar/internal/print"
 	"github.com/opensourcecorp/oscar/internal/tools"
 	igo "github.com/opensourcecorp/oscar/internal/tools/go"
-	"github.com/opensourcecorp/oscar/internal/tools/markdown"
-	"github.com/opensourcecorp/oscar/internal/tools/python"
-	"github.com/opensourcecorp/oscar/internal/tools/shell"
 )
 
-// TaskMap is a less-verbose type alias for mapping language names to function signatures that
-// return a language's tasks.
-type TaskMap map[string][]tools.Tasker
-
-// GetCITaskMap assembles the overall list of CI tasks, keyed by their language/tooling name
-func GetCITaskMap() (TaskMap, error) {
+// GetDeliveryTaskMap assembles the overall list of Delivery tasks, keyed by their language/tooling
+// name.
+func GetDeliveryTaskMap() (tools.TaskMap, error) {
 	repo, err := tools.GetRepoComposition()
 	if err != nil {
 		return nil, fmt.Errorf("getting repo composition: %w", err)
 	}
 
-	out := make(TaskMap, 0)
+	out := make(tools.TaskMap, 0)
 	for langName, getTasksFunc := range map[string]func(tools.Repo) []tools.Tasker{
-		"Go":       igo.Tasks,
-		"Python":   python.Tasks,
-		"Shell":    shell.Tasks,
-		"Markdown": markdown.Tasks,
+		"Go": igo.TasksForDelivery,
 	} {
 		tasks := getTasksFunc(repo)
 		if len(tasks) > 0 {
@@ -42,13 +33,13 @@ func GetCITaskMap() (TaskMap, error) {
 
 	if len(out) > 0 {
 		fmt.Print(repo.String())
-		iprint.Debugf("GetCITasks output: %+v\n", out)
+		iprint.Debugf("GetDeliveryTaskMap output: %#v\n", out)
 	}
 
 	return out, nil
 }
 
-// Run defines the behavior for running all CI tasks for the repository.
+// Run defines the behavior for running all Delivery tasks for the repository.
 func Run() (err error) {
 	runStartTime := time.Now()
 
@@ -69,15 +60,15 @@ func Run() (err error) {
 		longestInfoTextLength     int
 	)
 
-	// All the CI tasks that will be looped over. Will also print a summary of discovered file
+	// All the Delivery tasks that will be looped over. Will also print a summary of discovered file
 	// types.
-	ciTaskMap, err := GetCITaskMap()
+	deliveryTaskMap, err := GetDeliveryTaskMap()
 	if err != nil {
-		return fmt.Errorf("getting CI tasks: %w", err)
+		return fmt.Errorf("getting Delivery tasks: %w", err)
 	}
 
 	// Log padding setup
-	for lang, tasks := range ciTaskMap {
+	for lang, tasks := range deliveryTaskMap {
 		longestLanguageNameLength = max(longestLanguageNameLength, len(lang))
 		for _, t := range tasks {
 			longestInfoTextLength = max(longestInfoTextLength, len(t.InfoText()))
@@ -87,23 +78,18 @@ func Run() (err error) {
 	iprint.Debugf("longestLanguageNameLength: %d\n", longestLanguageNameLength)
 	iprint.Debugf("longestInfoTextLength: %d\n", longestInfoTextLength)
 
-	// For tracking any changes to Git status etc. after each Task runs
-	git, err := NewGit()
-	if err != nil {
-		return fmt.Errorf("internal error: %w", err)
-	}
-
 	// Keeps track of all task failures
 	failures := make([]string, 0)
-	for lang, tasks := range ciTaskMap {
+	for lang, tasks := range deliveryTaskMap {
 		langNameBannerPadding := strings.Repeat("=", longestLanguageNameLength-len(lang)/2)
 		fmt.Printf(
-			"============%s %s %s============\n",
-			langNameBannerPadding, lang, langNameBannerPadding,
+			"%s%s %s %s%s\n",
+			strings.Repeat("=", 24), langNameBannerPadding, lang, langNameBannerPadding, strings.Repeat("=", 24),
 		)
 
 		for _, t := range tasks {
-			// NOTE: if no InfoText() method is provided, it's probably a lang-wide init func, so skip it
+			// NOTE: if no InfoText() method is provided, it's probably a lang-wide init func, so
+			// skip it
 			if t.InfoText() == "" {
 				continue
 			}
@@ -120,52 +106,28 @@ func Run() (err error) {
 			runErr = errors.Join(runErr, t.Run())
 			runErr = errors.Join(runErr, t.Post())
 
-			if err := git.Update(); err != nil {
-				return fmt.Errorf("internal error: %w", err)
-			}
-			gitStatusHasChanged, err := git.StatusHasChanged()
-			if err != nil {
-				return fmt.Errorf("internal error: %w", err)
-			}
-
-			if runErr != nil || gitStatusHasChanged {
-				iprint.Errorf("FAILED! (%s)\n", tools.RunDurationString(taskStartTime))
-				iprint.Errorf("\n")
-
-				if runErr != nil {
-					iprint.Errorf("%v\n", runErr)
-				}
-
-				if gitStatusHasChanged {
-					iprint.Errorf("Files ~CHANGED~ during run: %+v\n", git.CurrentStatus.Diff)
-					iprint.Errorf("Files +CREATED+ during run: %+v\n", git.CurrentStatus.UntrackedFiles)
-					iprint.Errorf("\n")
-				}
+			if runErr != nil {
+				iprint.Errorf("FAILED    (%s)\n", tools.RunDurationString(taskStartTime))
+				iprint.Errorf("%v\n", runErr)
 
 				failures = append(failures, fmt.Sprintf("%s :: %s", lang, t.InfoText()))
-
-				// Also need to reset the baseline status
-				git, err = NewGit()
-				if err != nil {
-					return fmt.Errorf("internal error: %w", err)
-				}
 			} else {
-				fmt.Printf("PASSED (%s)\n", tools.RunDurationString(taskStartTime))
+				fmt.Printf("SUCCEEDED (%s)\n", tools.RunDurationString(taskStartTime))
 			}
 		}
 	}
 
 	if len(failures) > 0 {
 		iprint.Errorf("\n================================================================\n")
-		iprint.Errorf("The following checks failed and/or caused a git diff: (%s)\n", tools.RunDurationString(runStartTime))
+		iprint.Errorf("The following tasks failed: (%s)\n", tools.RunDurationString(runStartTime))
 		for _, f := range failures {
 			iprint.Errorf("- %s\n", f)
 		}
 		iprint.Errorf("================================================================\n\n")
-		return errors.New("one or more CI checks failed")
+		return errors.New("one or more Delivery tasks failed")
 	}
 
-	fmt.Printf("All checks passed! (%s)\n", tools.RunDurationString(runStartTime))
+	fmt.Printf("All tasks succeeded! (%s)\n", tools.RunDurationString(runStartTime))
 
 	return err
 }

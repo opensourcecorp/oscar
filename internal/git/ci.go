@@ -1,20 +1,20 @@
-package ci
+package git
 
 import (
 	"fmt"
-	"os/exec"
 	"regexp"
 	"slices"
 	"strings"
 
 	iprint "github.com/opensourcecorp/oscar/internal/print"
+	"github.com/opensourcecorp/oscar/internal/tools"
 )
 
-// Git defines metadata & behavior for Git interactions.
-type Git struct {
-	// BaselineStatusForCI is used to check against when running CI checks, so that each CI task can
+// CI defines metadata & behavior for CI tasks.
+type CI struct {
+	// BaselineStatus is used to check against when running CI checks, so that each CI task can
 	// see if it introduced changes.
-	BaselineStatusForCI Status
+	BaselineStatus Status
 	// CurrentStatus is the latest-available Git status, which may differ from the baseline.
 	CurrentStatus Status
 }
@@ -25,20 +25,20 @@ type Status struct {
 	UntrackedFiles []string
 }
 
-// NewGit returns a snapshot of Git information available at call-time.
-func NewGit() (*Git, error) {
+// NewForCI returns Git information for CI tasks.
+func NewForCI() (*CI, error) {
 	status, err := getRawStatus()
 	if err != nil {
 		return nil, err
 	}
 
-	return &Git{
-		BaselineStatusForCI: status,
+	return &CI{
+		BaselineStatus: status,
 	}, nil
 }
 
-// Update recalculates various Git metadata, respecting any existing baseline values set in [NewGit].
-func (g *Git) Update() error {
+// Update recalculates various Git metadata, respecting any existing baseline values set in [NewForCI].
+func (g *CI) Update() error {
 	status, err := getRawStatus()
 	if err != nil {
 		return fmt.Errorf("getting Git status: %w", err)
@@ -48,14 +48,14 @@ func (g *Git) Update() error {
 	diff := make([]string, 0)
 
 	for _, line := range status.Diff {
-		if !slices.Contains(g.BaselineStatusForCI.Diff, line) {
+		if !slices.Contains(g.BaselineStatus.Diff, line) {
 			filename := regexp.MustCompile(`^ [A-Z] `).ReplaceAllString(line, "")
 			diff = append(diff, filename)
 		}
 	}
 
 	for _, line := range status.UntrackedFiles {
-		if !slices.Contains(g.BaselineStatusForCI.UntrackedFiles, line) {
+		if !slices.Contains(g.BaselineStatus.UntrackedFiles, line) {
 			filename := strings.ReplaceAll(line, "?? ", "")
 			untrackedFiles = append(diff, filename)
 		}
@@ -70,18 +70,18 @@ func (g *Git) Update() error {
 }
 
 // StatusHasChanged informs the caller of whether or not the [Status] now differs from the baseline.
-func (g *Git) StatusHasChanged() (bool, error) {
+func (g *CI) StatusHasChanged() (bool, error) {
 	if err := g.updateStatus(); err != nil {
 		return false, err
 	}
 
 	iprint.Debugf("len(g.CurrentStatus.Diff) = %d\n", len(g.CurrentStatus.Diff))
-	iprint.Debugf("len(g.BaselineStatusForCI.Diff) = %d\n", len(g.BaselineStatusForCI.Diff))
+	iprint.Debugf("len(g.BaselineStatusForCI.Diff) = %d\n", len(g.BaselineStatus.Diff))
 	iprint.Debugf("len(g.CurrentStatus.UntrackedFiles) = %d\n", len(g.CurrentStatus.UntrackedFiles))
-	iprint.Debugf("len(g.BaselineStatusForCI.UntrackedFiles) = %d\n", len(g.BaselineStatusForCI.UntrackedFiles))
+	iprint.Debugf("len(g.BaselineStatusForCI.UntrackedFiles) = %d\n", len(g.BaselineStatus.UntrackedFiles))
 
-	statusChanged := (len(g.CurrentStatus.Diff)+len(g.BaselineStatusForCI.Diff)) != len(g.BaselineStatusForCI.Diff) ||
-		(len(g.CurrentStatus.UntrackedFiles)+len(g.BaselineStatusForCI.UntrackedFiles)) != len(g.BaselineStatusForCI.UntrackedFiles)
+	statusChanged := (len(g.CurrentStatus.Diff)+len(g.BaselineStatus.Diff)) != len(g.BaselineStatus.Diff) ||
+		(len(g.CurrentStatus.UntrackedFiles)+len(g.BaselineStatus.UntrackedFiles)) != len(g.BaselineStatus.UntrackedFiles)
 
 	iprint.Debugf("statusChanged: %v\n", statusChanged)
 
@@ -91,8 +91,7 @@ func (g *Git) StatusHasChanged() (bool, error) {
 // getRawStatus returns a slightly-modified "git status" output, so that calling tools can parse it
 // more easily.
 func getRawStatus() (Status, error) {
-	cmd := exec.Command("git", "status", "--porcelain")
-	outputBytes, err := cmd.CombinedOutput()
+	outputBytes, err := tools.RunCommand([]string{"git", "status", "--porcelain"})
 	if err != nil {
 		return Status{}, fmt.Errorf("getting git status output: %w", err)
 	}
@@ -122,7 +121,7 @@ func getRawStatus() (Status, error) {
 }
 
 // updateStatus updates the tracked Git status so that it can be compared against the baseline.
-func (g *Git) updateStatus() error {
+func (g *CI) updateStatus() error {
 	// So any future debug logs have a line break in them
 	iprint.Debugf("\n")
 
@@ -138,14 +137,14 @@ func (g *Git) updateStatus() error {
 
 	for _, line := range status.Diff {
 		filename := regexp.MustCompile(`^( +)?[A-Z]+ +`).ReplaceAllString(line, "")
-		if !slices.Contains(g.BaselineStatusForCI.Diff, filename) {
+		if !slices.Contains(g.BaselineStatus.Diff, filename) {
 			diff = append(diff, filename)
 		}
 	}
 
 	for _, line := range status.UntrackedFiles {
 		filename := strings.ReplaceAll(line, "?? ", "")
-		if !slices.Contains(g.BaselineStatusForCI.UntrackedFiles, filename) {
+		if !slices.Contains(g.BaselineStatus.UntrackedFiles, filename) {
 			untrackedFiles = append(diff, filename)
 		}
 	}

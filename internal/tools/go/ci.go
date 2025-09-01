@@ -10,50 +10,79 @@ import (
 	"github.com/opensourcecorp/oscar/internal/tools/toolcfg"
 )
 
-// A list of tasks that all implement [tools.Tasker], for Go.
 type (
-	goModCheckTask   struct{}
-	goFormatTask     struct{}
-	generateCodeTask struct{}
-	goBuildTask      struct{}
-	goVetTask        struct{}
-	staticcheckTask  struct{}
-	reviveTask       struct{}
-	errcheckTask     struct{}
-	goImportsTask    struct{}
-	govulncheckTask  struct{}
-	goTestTask       struct{}
+	goModCheckCI   struct{}
+	goFormatCI     struct{}
+	generateCodeCI struct{}
+	goBuildCI      struct{}
+	goVetCI        struct{}
+	staticcheckCI  struct{}
+	reviveCI       struct{}
+	errcheckCI     struct{}
+	goImportsCI    struct{}
+	govulncheckCI  struct{}
+	goTestCI       struct{}
 )
 
-var tasks = []tools.Tasker{
-	goModCheckTask{},
-	goFormatTask{},
-	generateCodeTask{},
-	goBuildTask{},
-	goVetTask{},
-	staticcheckTask{},
-	reviveTask{},
-	errcheckTask{},
-	goImportsTask{},
-	govulncheckTask{},
-	goTestTask{},
+var ciTasks = []tools.Tasker{
+	goModCheckCI{},
+	goFormatCI{},
+	generateCodeCI{},
+	goBuildCI{},
+	goVetCI{},
+	staticcheckCI{},
+	reviveCI{},
+	errcheckCI{},
+	goImportsCI{},
+	govulncheckCI{},
+	goTestCI{},
 }
 
-// Tasks returns the list of CI tasks.
-func Tasks(repo tools.Repo) []tools.Tasker {
+var (
+	staticcheck = tools.Tool{
+		Name:           "staticcheck",
+		RemotePath:     "honnef.co/go/tools/cmd/staticcheck",
+		Version:        "2025.1.1",
+		ConfigFilePath: filepath.Join("./staticcheck.conf"),
+	}
+	revive = tools.Tool{
+		Name:           "revive",
+		RemotePath:     "github.com/mgechev/revive",
+		Version:        "v1.11.0",
+		ConfigFilePath: filepath.Join(os.TempDir(), "revive.toml"),
+	}
+	errcheck = tools.Tool{
+		Name:       "errcheck",
+		RemotePath: "github.com/kisielk/errcheck",
+		Version:    "v1.9.0",
+	}
+	goimports = tools.Tool{
+		Name:       "goimports",
+		RemotePath: "golang.org/x/tools/cmd/goimports",
+		Version:    "v0.35.0",
+	}
+	govulncheck = tools.Tool{
+		Name:       "govulncheck",
+		RemotePath: "golang.org/x/vuln/cmd/govulncheck",
+		Version:    "v1.1.4",
+	}
+)
+
+// TasksForCI returns the list of CI tasks.
+func TasksForCI(repo tools.Repo) []tools.Tasker {
 	if repo.HasGo {
-		return tasks
+		return ciTasks
 	}
 
 	return nil
 }
 
 // InfoText implements [tools.Tasker.InfoText].
-func (t goModCheckTask) InfoText() string { return "go.mod tidy check" }
+func (t goModCheckCI) InfoText() string { return "go.mod tidy check" }
 
 // Run implements [tools.Tasker.Run].
-func (t goModCheckTask) Run() error {
-	if err := tools.RunCommand([]string{"go", "mod", "tidy"}); err != nil {
+func (t goModCheckCI) Run() error {
+	if _, err := tools.RunCommand([]string{"go", "mod", "tidy"}); err != nil {
 		return err
 	}
 
@@ -61,14 +90,14 @@ func (t goModCheckTask) Run() error {
 }
 
 // Post implements [tools.Tasker.Post].
-func (t goModCheckTask) Post() error { return nil }
+func (t goModCheckCI) Post() error { return nil }
 
 // InfoText implements [tools.Tasker.InfoText].
-func (t goFormatTask) InfoText() string { return "Format" }
+func (t goFormatCI) InfoText() string { return "Format" }
 
 // Run implements [tools.Tasker.Run].
-func (t goFormatTask) Run() error {
-	if err := tools.RunCommand([]string{"go", "fmt", "./..."}); err != nil {
+func (t goFormatCI) Run() error {
+	if _, err := tools.RunCommand([]string{"go", "fmt", "./..."}); err != nil {
 		return err
 	}
 
@@ -76,14 +105,14 @@ func (t goFormatTask) Run() error {
 }
 
 // Post implements [tools.Tasker.Post].
-func (t goFormatTask) Post() error { return nil }
+func (t goFormatCI) Post() error { return nil }
 
 // InfoText implements [tools.Tasker.InfoText].
-func (t generateCodeTask) InfoText() string { return "Generate code" }
+func (t generateCodeCI) InfoText() string { return "Generate code" }
 
 // Run implements [tools.Tasker.Run].
-func (t generateCodeTask) Run() error {
-	if err := tools.RunCommand([]string{"go", "generate", "./..."}); err != nil {
+func (t generateCodeCI) Run() error {
+	if _, err := tools.RunCommand([]string{"go", "generate", "./..."}); err != nil {
 		return err
 	}
 
@@ -91,14 +120,14 @@ func (t generateCodeTask) Run() error {
 }
 
 // Post implements [tools.Tasker.Post].
-func (t generateCodeTask) Post() error { return nil }
+func (t generateCodeCI) Post() error { return nil }
 
 // InfoText implements [tools.Tasker.InfoText].
-func (t goBuildTask) InfoText() string { return "Build" }
+func (t goBuildCI) InfoText() string { return "Build" }
 
 // Run implements [tools.Tasker.Run].
-func (t goBuildTask) Run() error {
-	if err := tools.RunCommand([]string{"go", "build", "./..."}); err != nil {
+func (t goBuildCI) Run() error {
+	if _, err := tools.RunCommand([]string{"go", "build", "./..."}); err != nil {
 		return err
 	}
 
@@ -106,14 +135,14 @@ func (t goBuildTask) Run() error {
 }
 
 // Post implements [tools.Tasker.Post].
-func (t goBuildTask) Post() error { return nil }
+func (t goBuildCI) Post() error { return nil }
 
 // InfoText implements [tools.Tasker.InfoText].
-func (t goVetTask) InfoText() string { return "Vet" }
+func (t goVetCI) InfoText() string { return "Vet" }
 
 // Run implements [tools.Tasker.Run].
-func (t goVetTask) Run() error {
-	if err := tools.RunCommand([]string{"go", "vet", "./..."}); err != nil {
+func (t goVetCI) Run() error {
+	if _, err := tools.RunCommand([]string{"go", "vet", "./..."}); err != nil {
 		return err
 	}
 
@@ -121,13 +150,13 @@ func (t goVetTask) Run() error {
 }
 
 // Post implements [tools.Tasker.Post].
-func (t goVetTask) Post() error { return nil }
+func (t goVetCI) Post() error { return nil }
 
 // InfoText implements [tools.Tasker.InfoText].
-func (t staticcheckTask) InfoText() string { return "Lint (staticcheck)" }
+func (t staticcheckCI) InfoText() string { return "Lint (staticcheck)" }
 
 // Run implements [tools.Tasker.Run].
-func (t staticcheckTask) Run() (err error) {
+func (t staticcheckCI) Run() (err error) {
 	cfgFileContents, err := toolcfg.Files.ReadFile(filepath.Base(staticcheck.ConfigFilePath))
 	if err != nil {
 		return fmt.Errorf("reading embedded file contents: %w", err)
@@ -145,7 +174,7 @@ func (t staticcheckTask) Run() (err error) {
 }
 
 // Post implements [tools.Tasker.Post].
-func (t staticcheckTask) Post() error {
+func (t staticcheckCI) Post() error {
 	if err := os.RemoveAll(staticcheck.ConfigFilePath); err != nil {
 		return fmt.Errorf("removing config file: %w", err)
 	}
@@ -154,10 +183,10 @@ func (t staticcheckTask) Post() error {
 }
 
 // InfoText implements [tools.Tasker.InfoText].
-func (t reviveTask) InfoText() string { return "Lint (revive)" }
+func (t reviveCI) InfoText() string { return "Lint (revive)" }
 
 // Run implements [tools.Tasker.Run].
-func (t reviveTask) Run() error {
+func (t reviveCI) Run() error {
 	cfgFileContents, err := toolcfg.Files.ReadFile(filepath.Base(revive.ConfigFilePath))
 	if err != nil {
 		return fmt.Errorf("reading embedded file contents: %w", err)
@@ -181,7 +210,7 @@ func (t reviveTask) Run() error {
 }
 
 // Post implements [tools.Tasker.Post].
-func (t reviveTask) Post() error {
+func (t reviveCI) Post() error {
 	if err := os.RemoveAll(revive.ConfigFilePath); err != nil {
 		return fmt.Errorf("removing config file: %w", err)
 	}
@@ -190,10 +219,10 @@ func (t reviveTask) Post() error {
 }
 
 // InfoText implements [tools.Tasker.InfoText].
-func (t errcheckTask) InfoText() string { return "Lint (errcheck)" }
+func (t errcheckCI) InfoText() string { return "Lint (errcheck)" }
 
 // Run implements [tools.Tasker.Run].
-func (t errcheckTask) Run() error {
+func (t errcheckCI) Run() error {
 	if err := goRun(errcheck, "./..."); err != nil {
 		return err
 	}
@@ -202,13 +231,13 @@ func (t errcheckTask) Run() error {
 }
 
 // Post implements [tools.Tasker.Post].
-func (t errcheckTask) Post() error { return nil }
+func (t errcheckCI) Post() error { return nil }
 
 // InfoText implements [tools.Tasker.InfoText].
-func (t goImportsTask) InfoText() string { return "Format imports" }
+func (t goImportsCI) InfoText() string { return "Format imports" }
 
 // Run implements [tools.Tasker.Run].
-func (t goImportsTask) Run() error {
+func (t goImportsCI) Run() error {
 	args := []string{"-l", "-w", "."}
 	if err := goRun(goimports, args...); err != nil {
 		return err
@@ -218,13 +247,13 @@ func (t goImportsTask) Run() error {
 }
 
 // Post implements [tools.Tasker.Post].
-func (t goImportsTask) Post() error { return nil }
+func (t goImportsCI) Post() error { return nil }
 
 // InfoText implements [tools.Tasker.InfoText].
-func (t govulncheckTask) InfoText() string { return "Vulnerability scan (govulncheck)" }
+func (t govulncheckCI) InfoText() string { return "Vulnerability scan (govulncheck)" }
 
 // Run implements [tools.Tasker.Run].
-func (t govulncheckTask) Run() error {
+func (t govulncheckCI) Run() error {
 	if err := goRun(govulncheck, "./..."); err != nil {
 		return err
 	}
@@ -233,14 +262,14 @@ func (t govulncheckTask) Run() error {
 }
 
 // Post implements [tools.Tasker.Post].
-func (t govulncheckTask) Post() error { return nil }
+func (t govulncheckCI) Post() error { return nil }
 
 // InfoText implements [tools.Tasker.InfoText].
-func (t goTestTask) InfoText() string { return "Test" }
+func (t goTestCI) InfoText() string { return "Test" }
 
 // Run implements [tools.Tasker.Run].
-func (t goTestTask) Run() error {
-	if err := tools.RunCommand([]string{"go", "test", "./..."}); err != nil {
+func (t goTestCI) Run() error {
+	if _, err := tools.RunCommand([]string{"go", "test", "./..."}); err != nil {
 		return err
 	}
 
@@ -248,7 +277,7 @@ func (t goTestTask) Run() error {
 }
 
 // Post implements [tools.Tasker.Post].
-func (t goTestTask) Post() error { return nil }
+func (t goTestCI) Post() error { return nil }
 
 // goRun is a wrapper for "go run"
 func goRun(t tools.Tool, trailingArgs ...string) error {
@@ -256,7 +285,7 @@ func goRun(t tools.Tool, trailingArgs ...string) error {
 		[]string{"go", "run", fmt.Sprintf("%s@%s", t.RemotePath, t.Version)},
 		trailingArgs,
 	)
-	if err := tools.RunCommand(args); err != nil {
+	if _, err := tools.RunCommand(args); err != nil {
 		return fmt.Errorf("running 'go run': %w", err)
 	}
 

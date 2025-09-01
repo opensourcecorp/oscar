@@ -46,7 +46,7 @@ func (t markdownlintTask) Run() error {
 		"**/*.md",
 	}
 
-	if err := tools.RunCommand(args); err != nil {
+	if _, err := tools.RunCommand(args); err != nil {
 		return err
 	}
 

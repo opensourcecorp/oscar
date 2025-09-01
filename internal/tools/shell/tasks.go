@@ -35,9 +35,10 @@ func (t shellcheckTask) Run() error {
 	args := []string{"bash", "-c", fmt.Sprintf(`
 		shopt -s globstar
 		ls **/*.sh || exit 0
-		%s **/*.sh
-	`, shellcheck.Name)}
-	if err := tools.RunCommand(args); err != nil {
+		%s **/*.sh`,
+		shellcheck.Name,
+	)}
+	if _, err := tools.RunCommand(args); err != nil {
 		return err
 	}
 
@@ -55,9 +56,10 @@ func (t shfmtTask) Run() error {
 	args := []string{"bash", "-c", fmt.Sprintf(`
 		shopt -s globstar
 		ls **/*.sh || exit 0
-		%s **/*.sh
-	`, shfmt.Name)}
-	if err := tools.RunCommand(args); err != nil {
+		%s **/*.sh`,
+		shfmt.Name,
+	)}
+	if _, err := tools.RunCommand(args); err != nil {
 		return err
 	}
 
@@ -76,9 +78,10 @@ func (t batsTask) Run() error {
 		shopt -s globstar
 		# Don't run if no bats files found, otherwise it will error out
 		ls **/*.bats || exit 0
-		%s **/*.bats
-	`, bats.Name)}
-	if err := tools.RunCommand(args); err != nil {
+		%s **/*.bats`,
+		bats.Name,
+	)}
+	if _, err := tools.RunCommand(args); err != nil {
 		return err
 	}
 

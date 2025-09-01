@@ -52,7 +52,7 @@ func (t buildTask) InfoText() string { return "Build" }
 
 // Run implements [tools.Tasker.Run].
 func (t buildTask) Run() error {
-	if err := tools.RunCommand([]string{"uv", "build"}); err != nil {
+	if _, err := tools.RunCommand([]string{"uv", "build"}); err != nil {
 		return err
 	}
 
@@ -127,7 +127,7 @@ func pyRun(t tools.Tool, trailingArgs ...string) error {
 		[]string{"uvx", fmt.Sprintf("%s@%s", t.Name, t.Version)},
 		trailingArgs,
 	)
-	if err := tools.RunCommand(args); err != nil {
+	if _, err := tools.RunCommand(args); err != nil {
 		return fmt.Errorf("running 'uvx': %w", err)
 	}
 
