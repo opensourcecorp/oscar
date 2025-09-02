@@ -2,13 +2,10 @@ package semver
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 
 	iprint "github.com/opensourcecorp/oscar/internal/print"
-	"github.com/opensourcecorp/oscar/internal/tools"
 	xsemver "golang.org/x/mod/semver"
 )
 
@@ -24,7 +21,7 @@ func Get(s string) (string, error) {
 	// just grab the whole MMP with a regex
 	matchList := regexp.MustCompile(`[0-9]+(\.[0-9]+)?(\.[0-9]+)?`).FindStringSubmatch(s)
 	if len(matchList) == 0 {
-		return "", fmt.Errorf("malformed or unmatchable Semantic Version number from 'VERSION' file (got: '%s')", s)
+		return "", fmt.Errorf("malformed or unmatchable Semantic Version number (got: '%s')", s)
 	}
 	v := matchList[0]
 
@@ -57,47 +54,13 @@ func Get(s string) (string, error) {
 	}
 
 	if !xsemver.IsValid(v) {
-		return "", fmt.Errorf("could not understand the Semantic Version you provided in your 'VERSION' file (got: '%s', converted to: '%s')", s, v)
+		return "", fmt.Errorf("could not understand the Semantic Version you provided (got: '%s', converted to: '%s')", s, v)
 	}
 
 	// NOW, we can finally strip off the "v" prefix
 	v = strings.TrimPrefix(v, "v")
 
 	return v, nil
-}
-
-// GetFromFile reads the contents of the codebase's "VERSION" file, and passes it to [Get].
-func GetFromFile(pathOverride ...string) (string, error) {
-	root, err := tools.RunCommand([]string{"git", "rev-parse", "--show-toplevel"})
-	if err != nil {
-		return "", err
-	}
-
-	path := filepath.Join(root, "VERSION")
-	if len(pathOverride) > 0 {
-		path = pathOverride[0]
-	}
-
-	versionFileContents, err := os.ReadFile(path)
-	if err != nil {
-		return "", err
-	}
-
-	versionFileLines := strings.Split(string(versionFileContents), "\n")
-	var version string
-	for _, line := range versionFileLines {
-		if v, err := Get(line); err == nil {
-			version = v
-			break
-		}
-		iprint.Debugf("error matching line in VERSION file: %v\n", err)
-	}
-
-	if version == "" {
-		return "", fmt.Errorf("could not determine a Semantic Version from your 'VERSION' file")
-	}
-
-	return version, nil
 }
 
 // VersionWasIncremented reports whether the newVersion is greater than the oldVersion.

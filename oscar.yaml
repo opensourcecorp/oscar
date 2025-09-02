@@ -1,0 +1,6 @@
+version: "1.0.0"
+deliver:
+  go_github_release:
+    repo: "opensourcecorp/oscar"
+    build_sources:
+      - "./cmd/oscar"

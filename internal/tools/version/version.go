@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/opensourcecorp/oscar/internal/consts"
+	"github.com/opensourcecorp/oscar/internal/oscarcfg"
 	iprint "github.com/opensourcecorp/oscar/internal/print"
 	"github.com/opensourcecorp/oscar/internal/semver"
 	"github.com/opensourcecorp/oscar/internal/tools"
@@ -23,17 +25,18 @@ func TasksForCI(_ tools.Repo) []tools.Tasker {
 }
 
 // InfoText implements [tools.Tasker.InfoText].
-func (t versionCI) InfoText() string { return "VERSION file checks" }
+func (t versionCI) InfoText() string { return "Versioning checks" }
 
 // Run implements [tools.Tasker.Run].
 func (t versionCI) Run() (err error) {
-	version, err := semver.GetFromFile()
+	cfg, err := oscarcfg.Get()
 	if err != nil {
-		return err
+		return fmt.Errorf("getting oscar config: %w", err)
 	}
-	iprint.Debugf("VERSION: %s\n", version)
+	version := cfg.Version
+	iprint.Debugf("provided version: %s\n", version)
 
-	// NOTE: we clone the repo in question to a temp location to check the VERSION file contents on
+	// NOTE: we clone the repo in question to a temp location to check the version on
 	// the main branch, instead of e.g. trying to checkout main. This is for may reasons, not the
 	// least of which being that alternatives would be unreliable in e.g. GitHub Actions CI based on
 	// how it treats PR checkouts et al. A small price to pay for reliability.
@@ -56,11 +59,12 @@ func (t versionCI) Run() (err error) {
 		return fmt.Errorf("cloning repo source to temp location: %w", err)
 	}
 
-	mainVersion, err := semver.GetFromFile(filepath.Join(tmpCloneDir, "VERSION"))
+	mainCfg, err := oscarcfg.Get(filepath.Join(tmpCloneDir, consts.DefaultOscarCfgFileName))
 	if err != nil {
-		return err
+		return fmt.Errorf("getting oscar config: %w", err)
 	}
-	iprint.Debugf("VERSION on main branch: %s\n", version)
+	mainVersion := mainCfg.Version
+	iprint.Debugf("main version: %s\n", version)
 
 	// Need to check if we're already on the main branch, since checking its version against itself
 	// will unintentionally fail
@@ -76,7 +80,7 @@ func (t versionCI) Run() (err error) {
 	if branch != "main" {
 		if !semver.VersionWasIncremented(version, mainVersion) {
 			return fmt.Errorf(
-				"version in 'VERSION' file on this branch (%s) has not been incremented from the version on the main branch",
+				"version in oscar config on this branch (%s) has not been incremented from the version on the main branch",
 				version,
 			)
 		}

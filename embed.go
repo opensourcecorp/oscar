@@ -8,5 +8,5 @@ import "embed"
 // 'mise.toml' file that is used for not only oscar's own development config but also for its
 // internals.
 //
-//go:embed VERSION mise.toml
+//go:embed mise.toml oscar.yaml
 var Files embed.FS

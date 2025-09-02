@@ -27,11 +27,11 @@ func GetCITaskMap() (tools.TaskMap, error) {
 
 	out := make(tools.TaskMap, 0)
 	for langName, getTasksFunc := range map[string]func(tools.Repo) []tools.Tasker{
-		"VERSION file": version.TasksForCI,
-		"Go":           igo.TasksForCI,
-		"Python":       python.Tasks,
-		"Shell":        shell.Tasks,
-		"Markdown":     markdown.Tasks,
+		"Version":  version.TasksForCI,
+		"Go":       igo.TasksForCI,
+		"Python":   python.Tasks,
+		"Shell":    shell.Tasks,
+		"Markdown": markdown.Tasks,
 	} {
 		tasks := getTasksFunc(repo)
 		if len(tasks) > 0 {

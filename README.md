@@ -32,11 +32,11 @@ list via `oscar --help`.
 
 ## Features
 
-| Feature                      | `oscar` command | Details                            |
-| :--------------------------- | :-------------- | :--------------------------------- |
-| Continuous integration       | `oscar ci`      | [section](#continuous-integration) |
+| Feature                | `oscar` command | Details                            |
+| :--------------------- | :-------------- | :--------------------------------- |
+| Continuous integration | `oscar ci`      | [section](#continuous-integration) |
+| Delivery               | `oscar deliver` | [section](#delivery)               |
 <!-- | Codebase & workstation setup | `oscar setup`   | [section]()                        | -->
-<!-- | Delivery                     | `oscar deliver` | [section]()                        | -->
 <!-- | Deployment                   | `oscar deploy`  | [section]()                        | -->
 
 ### Continuous Integration
@@ -57,6 +57,17 @@ possibly run against within a set of codebases.
 However, this does not mean that someone is prevented from adding *additional* checks outside of
 `oscar`'s purview -- it just means that you cannot override what `oscar` *does* control.
 
+### Delivery
+
+TODO
+
+| Artifact types | Targets         |
+| :------------- | :-------------- |
+| Go binaries    | GitHub Releases |
+<!-- | <empty cell>   | <second target for same artifact type> | -->
+<!-- | <empty cell>   | <third target for same artifact type> | -->
+<!-- | <second artifact type> | <first target for second artifact type> | -->
+
 ## Supported platforms
 
 `oscar` is designed to run on Linux, and should work on macOS as well. Native Windows has not been
@@ -69,14 +80,14 @@ Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for details about developing `os
 
 ## Roadmap
 
-* Add `VERSION` check comparing to `main` as a CI task
-* Add check for changelog Markdown file that matches what's in `VERSION` (we should also use that
+* Add check for changelog Markdown file that matches `oscar.yaml:version` (we should also use that
   file as the exact GH Release post contents)
 * Workstation setup
   * Have `oscar` manage Makefiles, dotfiles, etc.
 * CI additions
   * Terraform
   * protobuf
+  * R
   * Rust?
 * CD additions
   * Publish to ghcr

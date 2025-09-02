@@ -2,11 +2,8 @@ package git
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
-	"regexp"
-	"strings"
 
+	"github.com/opensourcecorp/oscar/internal/oscarcfg"
 	iprint "github.com/opensourcecorp/oscar/internal/print"
 	"github.com/opensourcecorp/oscar/internal/tools"
 )
@@ -15,8 +12,8 @@ import (
 type Delivery struct {
 	Root      string
 	LatestTag string
-	// From {Root}/VERSION file
-	CurrentVersionFromFile string
+	// From oscar config file
+	CurrentVersion string
 }
 
 // NewForDelivery returns Git information for Delivery tasks.
@@ -31,28 +28,20 @@ func NewForDelivery() (*Delivery, error) {
 		return nil, err
 	}
 
-	versionFileContents, err := os.ReadFile(filepath.Join(root, "VERSION"))
+	cfg, err := oscarcfg.Get()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("getting oscar config: %w", err)
 	}
-
-	versionFileLines := strings.Split(string(versionFileContents), "\n")
-	var version string
-	for _, line := range versionFileLines {
-		if regexp.MustCompile(`[0-9]+\.[0-9]+\.[0-9]+`).MatchString(line) {
-			version = line
-			break
-		}
-	}
+	version := cfg.Version
 
 	if version == "" {
-		return nil, fmt.Errorf("could not determine a Semantic Version from your 'VERSION' file")
+		return nil, fmt.Errorf("could not determine a Semantic Version from your oscar config file")
 	}
 
 	out := &Delivery{
-		Root:                   root,
-		LatestTag:              latestTag,
-		CurrentVersionFromFile: version,
+		Root:           root,
+		LatestTag:      latestTag,
+		CurrentVersion: version,
 	}
 	iprint.Debugf("git.Delivery: %+v\n", out)
 

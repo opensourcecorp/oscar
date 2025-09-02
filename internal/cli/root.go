@@ -5,10 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strings"
 
-	"github.com/opensourcecorp/oscar"
 	"github.com/opensourcecorp/oscar/internal/consts"
+	"github.com/opensourcecorp/oscar/internal/oscarcfg"
 	iprint "github.com/opensourcecorp/oscar/internal/print"
 	"github.com/opensourcecorp/oscar/internal/tasks/ci"
 	"github.com/opensourcecorp/oscar/internal/tasks/delivery"
@@ -27,10 +26,16 @@ const (
 
 // NewRootCmd defines & returns the CLI command used as oscar's entrypoint.
 func NewRootCmd() *cli.Command {
+	version, err := getVersion()
+	if err != nil {
+		iprint.Errorf("determining your version: %v\n", err)
+		os.Exit(1)
+	}
+
 	cmd := &cli.Command{
 		Name:    rootCmdName,
 		Usage:   "The OpenSourceCorp Automation Runner",
-		Version: getVersion(),
+		Version: version,
 		Action:  rootAction,
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
@@ -64,21 +69,13 @@ func maybeSetDebug(cmd *cli.Command) {
 }
 
 // getVersion retrieves the version of the codebase.
-func getVersion() string {
-	contents, err := oscar.Files.ReadFile("VERSION")
+func getVersion() (string, error) {
+	cfg, err := oscarcfg.Get()
 	if err != nil {
-		panic(fmt.Sprintf("Internal error trying to read VERSION file: %v", err))
+		return "", fmt.Errorf("internal error trying to read oscar config file: %w", err)
 	}
 
-	splits := strings.Split(string(contents), "\n")
-	var version string
-	for _, line := range splits {
-		if !strings.HasPrefix(line, "#") {
-			version = line
-			break
-		}
-	}
-	return version
+	return cfg.Version, nil
 }
 
 // rootAction defines the logic for oscar's root command.
