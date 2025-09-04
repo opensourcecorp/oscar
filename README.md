@@ -84,6 +84,8 @@ Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for details about developing `os
   file as the exact GH Release post contents)
 * Workstation setup
   * Have `oscar` manage Makefiles, dotfiles, etc.
+  * Also have it dump its own `mise.toml` for the user
+  * `self-update` subcommand
 * CI additions
   * Terraform
   * protobuf
