@@ -59,8 +59,11 @@ func (t ghRelease) Run() error {
 		target := filepath.Join(targetDir, fmt.Sprintf("%s-%s-%s", binName, goos, goarch))
 
 		if _, err := tools.RunCommand([]string{"bash", "-c", fmt.Sprintf(`
-			GOOS=%s GOARCH=%s go build -o %s %s`,
-			goos, goarch, target, src,
+			CGO_ENABLED=0 \
+			GOOS=%s GOARCH=%s \
+			go build -ldflags '-extldflags "-static"' -o %s %s`,
+			goos, goarch,
+			target, src,
 		)}); err != nil {
 			return fmt.Errorf("building Go binary: %w", err)
 		}

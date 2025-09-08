@@ -26,6 +26,11 @@ ci: clean
 # test is just an alias for ci
 test: ci
 
+# NOTE: oscar builds itself IRL, but having a target here makes it easier to have the Containerfile
+# have a stage-copiable output
+build:
+	@$(RUN) go build -o ./build/oscar ./cmd/oscar
+
 ci-container:
 	@$(DOCKER) build \
 		--build-arg http_proxy="$${http_proxy}" \
