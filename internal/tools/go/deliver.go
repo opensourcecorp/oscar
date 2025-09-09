@@ -1,6 +1,7 @@
-package igo
+package gotools
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -30,7 +31,7 @@ func TasksForDelivery(repo tools.Repo) []tools.Tasker {
 func (t ghRelease) InfoText() string { return "GitHub Release" }
 
 // Run implements [tools.Tasker.Run].
-func (t ghRelease) Run() error {
+func (t ghRelease) Run(ctx context.Context) error {
 	targetDir := "build"
 
 	if err := os.RemoveAll(targetDir); err != nil {
@@ -58,7 +59,7 @@ func (t ghRelease) Run() error {
 		src := "./cmd/oscar"
 		target := filepath.Join(targetDir, fmt.Sprintf("%s-%s-%s", binName, goos, goarch))
 
-		if _, err := tools.RunCommand([]string{"bash", "-c", fmt.Sprintf(`
+		if _, err := tools.RunCommand(ctx, []string{"bash", "-c", fmt.Sprintf(`
 			CGO_ENABLED=0 \
 			GOOS=%s GOARCH=%s \
 			go build -ldflags '-extldflags "-static"' -o %s %s`,
@@ -77,4 +78,4 @@ func (t ghRelease) Run() error {
 }
 
 // Post implements [tools.Tasker.Post].
-func (t ghRelease) Post() error { return nil }
+func (t ghRelease) Post(_ context.Context) error { return nil }

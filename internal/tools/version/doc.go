@@ -1,2 +1,2 @@
-// Package version contains logic for running tasks against the codebase version identifier(s).
-package version
+// Package versiontools contains logic for running tasks against the codebase version identifier(s).
+package versiontools

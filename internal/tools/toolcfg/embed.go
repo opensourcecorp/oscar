@@ -6,5 +6,5 @@ import "embed"
 
 // Files stores config files for each CI tool.
 //
-//go:embed *.conf *.toml *.yaml
+//go:embed *
 var Files embed.FS

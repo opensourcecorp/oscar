@@ -1,6 +1,7 @@
 package delivery
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -10,20 +11,20 @@ import (
 	"github.com/opensourcecorp/oscar/internal/consts"
 	iprint "github.com/opensourcecorp/oscar/internal/print"
 	"github.com/opensourcecorp/oscar/internal/tools"
-	igo "github.com/opensourcecorp/oscar/internal/tools/go"
+	gotools "github.com/opensourcecorp/oscar/internal/tools/go"
 )
 
 // GetDeliveryTaskMap assembles the overall list of Delivery tasks, keyed by their language/tooling
 // name.
-func GetDeliveryTaskMap() (tools.TaskMap, error) {
-	repo, err := tools.GetRepoComposition()
+func GetDeliveryTaskMap(ctx context.Context) (tools.TaskMap, error) {
+	repo, err := tools.GetRepoComposition(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("getting repo composition: %w", err)
 	}
 
 	out := make(tools.TaskMap, 0)
 	for langName, getTasksFunc := range map[string]func(tools.Repo) []tools.Tasker{
-		"Go": igo.TasksForDelivery,
+		"Go": gotools.TasksForDelivery,
 	} {
 		tasks := getTasksFunc(repo)
 		if len(tasks) > 0 {
@@ -40,11 +41,11 @@ func GetDeliveryTaskMap() (tools.TaskMap, error) {
 }
 
 // Run defines the behavior for running all Delivery tasks for the repository.
-func Run() (err error) {
+func Run(ctx context.Context) (err error) {
 	runStartTime := time.Now()
 
 	// Handle system init
-	if err := tools.InitSystem(); err != nil {
+	if err := tools.InitSystem(ctx); err != nil {
 		return fmt.Errorf("initializing system: %w", err)
 	}
 	// The mise config that oscar uses is written during init, so be sure to defer its removal here
@@ -62,7 +63,7 @@ func Run() (err error) {
 
 	// All the Delivery tasks that will be looped over. Will also print a summary of discovered file
 	// types.
-	deliveryTaskMap, err := GetDeliveryTaskMap()
+	deliveryTaskMap, err := GetDeliveryTaskMap(ctx)
 	if err != nil {
 		return fmt.Errorf("getting Delivery tasks: %w", err)
 	}
@@ -103,8 +104,8 @@ func Run() (err error) {
 			// NOTE: this error is checked later, when we can check the Run, Post, and git-diff
 			// potential errors together
 			var runErr error
-			runErr = errors.Join(runErr, t.Run())
-			runErr = errors.Join(runErr, t.Post())
+			runErr = errors.Join(runErr, t.Run(ctx))
+			runErr = errors.Join(runErr, t.Post(ctx))
 
 			if runErr != nil {
 				iprint.Errorf("FAILED    (%s)\n", tools.RunDurationString(taskStartTime))

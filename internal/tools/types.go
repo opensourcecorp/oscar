@@ -1,5 +1,7 @@
 package tools
 
+import "context"
+
 // Tasker defines the method set for working with metadata for a given CI Task.
 type Tasker interface {
 	// InfoText should return a human-readable display string that describes the task, e.g. "Run
@@ -7,17 +9,19 @@ type Tasker interface {
 	// may be desirable) in the case of implementers of [Tasker.Init])
 	InfoText() string
 	// Run should perform the actual task's actions.
-	Run() error
+	Run(ctx context.Context) error
 	// Post should perform any post-run actions for the task, if necessary.
-	Post() error
+	Post(ctx context.Context) error
 }
 
 // Repo stores information about the contents of the repository being ran against.
 type Repo struct {
-	HasGo       bool
-	HasPython   bool
-	HasShell    bool
-	HasMarkdown bool
+	HasGo        bool
+	HasPython    bool
+	HasShell     bool
+	HasTerraform bool
+	HasYaml      bool
+	HasMarkdown  bool
 }
 
 // TaskMap is a less-verbose type alias for mapping language names to function signatures that
@@ -34,13 +38,13 @@ type Tool struct {
 	// The tool's name, used as an identifier. May also be the tool's invocable command, in which
 	// case it can be interpolated as such.
 	Name string
-	// The installable path for the tool, like a URL. Can also be a format string, e.g. with
-	// placeholders for platform-specific strings.
-	RemotePath string
-	// The version of the tool.
-	Version string
 	// The path to the tool's config file, if it has one to use.
 	ConfigFilePath string
+	// The optional installable path for the tool, like a URL. Can also be a format string, e.g.
+	// with placeholders for platform-specific strings. Should mostly not be needed if using mise.
+	RemotePath string
+	// The version of the tool. Should mostly not be needed if using mise.
+	Version string
 }
 
 // String implements the [fmt.Stringer] interface.
@@ -57,6 +61,12 @@ func (repo Repo) String() string {
 	}
 	if repo.HasShell {
 		out += "- Shell (sh, bash, etc.)\n"
+	}
+	if repo.HasTerraform {
+		out += "- Terraform\n"
+	}
+	if repo.HasYaml {
+		out += "- YAML\n"
 	}
 	if repo.HasMarkdown {
 		out += "- Markdown\n"

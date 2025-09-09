@@ -1,2 +1,2 @@
-// Package markdown contains logic for running tasks for Markdown.
-package markdown
+// Package mdtools contains logic for running tasks for Markdown.
+package mdtools

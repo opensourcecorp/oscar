@@ -1,4 +1,4 @@
-package python
+package pytools
 
 import (
 	"github.com/opensourcecorp/oscar/internal/tools"

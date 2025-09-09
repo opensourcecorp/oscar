@@ -1,6 +1,7 @@
-package version
+package versiontools
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -28,7 +29,7 @@ func TasksForCI(_ tools.Repo) []tools.Tasker {
 func (t versionCI) InfoText() string { return "Versioning checks" }
 
 // Run implements [tools.Tasker.Run].
-func (t versionCI) Run() (err error) {
+func (t versionCI) Run(ctx context.Context) (err error) {
 	cfg, err := oscarcfg.Get()
 	if err != nil {
 		return fmt.Errorf("getting oscar config: %w", err)
@@ -50,12 +51,12 @@ func (t versionCI) Run() (err error) {
 		}
 	}()
 
-	remote, err := tools.RunCommand([]string{"git", "remote", "get-url", "origin"})
+	remote, err := tools.RunCommand(ctx, []string{"git", "remote", "get-url", "origin"})
 	if err != nil {
 		return fmt.Errorf("determining git root: %w", err)
 	}
 
-	if _, err := tools.RunCommand([]string{"git", "clone", "--depth", "1", remote, tmpCloneDir}); err != nil {
+	if _, err := tools.RunCommand(ctx, []string{"git", "clone", "--depth", "1", remote, tmpCloneDir}); err != nil {
 		return fmt.Errorf("cloning repo source to temp location: %w", err)
 	}
 
@@ -71,7 +72,7 @@ func (t versionCI) Run() (err error) {
 	//
 	// TODO: update internal git package to have a type with ALL this info so I stop copy-pasting
 	// shell-outs around
-	branch, err := tools.RunCommand([]string{"git", "rev-parse", "--abbrev-ref", "HEAD"})
+	branch, err := tools.RunCommand(ctx, []string{"git", "rev-parse", "--abbrev-ref", "HEAD"})
 	if err != nil {
 		return fmt.Errorf("checking current Git branch/ref: %w", err)
 	}
@@ -90,4 +91,4 @@ func (t versionCI) Run() (err error) {
 }
 
 // Post implements [tools.Tasker.Post].
-func (t versionCI) Post() error { return nil }
+func (t versionCI) Post(_ context.Context) error { return nil }

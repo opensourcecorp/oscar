@@ -87,12 +87,12 @@ func rootAction(_ context.Context, cmd *cli.Command) error {
 }
 
 // ciAction defines the logic for oscar's ci subcommand.
-func ciAction(_ context.Context, cmd *cli.Command) error {
+func ciAction(ctx context.Context, cmd *cli.Command) error {
 	maybeSetDebug(cmd)
 	iprint.Banner()
 	iprint.Debugf("oscar ci subcommand\n")
 
-	if err := ci.Run(); err != nil {
+	if err := ci.Run(ctx); err != nil {
 		return fmt.Errorf("running CI tasks: %w", err)
 	}
 
@@ -100,12 +100,12 @@ func ciAction(_ context.Context, cmd *cli.Command) error {
 }
 
 // deliverAction defines the logic for oscar's deliver subcommand.
-func deliverAction(_ context.Context, cmd *cli.Command) error {
+func deliverAction(ctx context.Context, cmd *cli.Command) error {
 	maybeSetDebug(cmd)
 	iprint.Banner()
 	iprint.Debugf("oscar deliver subcommand\n")
 
-	if err := delivery.Run(); err != nil {
+	if err := delivery.Run(ctx); err != nil {
 		return fmt.Errorf("running Delivery tasks: %w", err)
 	}
 

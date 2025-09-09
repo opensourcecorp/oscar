@@ -1,6 +1,7 @@
 package git
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"slices"
@@ -26,8 +27,8 @@ type Status struct {
 }
 
 // NewForCI returns Git information for CI tasks.
-func NewForCI() (*CI, error) {
-	status, err := getRawStatus()
+func NewForCI(ctx context.Context) (*CI, error) {
+	status, err := getRawStatus(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -38,8 +39,8 @@ func NewForCI() (*CI, error) {
 }
 
 // Update recalculates various Git metadata, respecting any existing baseline values set in [NewForCI].
-func (g *CI) Update() error {
-	status, err := getRawStatus()
+func (g *CI) Update(ctx context.Context) error {
+	status, err := getRawStatus(ctx)
 	if err != nil {
 		return fmt.Errorf("getting Git status: %w", err)
 	}
@@ -70,8 +71,8 @@ func (g *CI) Update() error {
 }
 
 // StatusHasChanged informs the caller of whether or not the [Status] now differs from the baseline.
-func (g *CI) StatusHasChanged() (bool, error) {
-	if err := g.updateStatus(); err != nil {
+func (g *CI) StatusHasChanged(ctx context.Context) (bool, error) {
+	if err := g.updateStatus(ctx); err != nil {
 		return false, err
 	}
 
@@ -90,8 +91,8 @@ func (g *CI) StatusHasChanged() (bool, error) {
 
 // getRawStatus returns a slightly-modified "git status" output, so that calling tools can parse it
 // more easily.
-func getRawStatus() (Status, error) {
-	outputBytes, err := tools.RunCommand([]string{"git", "status", "--porcelain"})
+func getRawStatus(ctx context.Context) (Status, error) {
+	outputBytes, err := tools.RunCommand(ctx, []string{"git", "status", "--porcelain"})
 	if err != nil {
 		return Status{}, fmt.Errorf("getting git status output: %w", err)
 	}
@@ -121,13 +122,13 @@ func getRawStatus() (Status, error) {
 }
 
 // updateStatus updates the tracked Git status so that it can be compared against the baseline.
-func (g *CI) updateStatus() error {
+func (g *CI) updateStatus(ctx context.Context) error {
 	// So any future debug logs have a line break in them
 	iprint.Debugf("\n")
 
 	iprint.Debugf("OLD git: %+v\n", g)
 
-	status, err := getRawStatus()
+	status, err := getRawStatus(ctx)
 	if err != nil {
 		return fmt.Errorf("getting Git status: %w", err)
 	}

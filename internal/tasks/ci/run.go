@@ -1,6 +1,7 @@
 package ci
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -11,27 +12,29 @@ import (
 	"github.com/opensourcecorp/oscar/internal/git"
 	iprint "github.com/opensourcecorp/oscar/internal/print"
 	"github.com/opensourcecorp/oscar/internal/tools"
-	igo "github.com/opensourcecorp/oscar/internal/tools/go"
-	"github.com/opensourcecorp/oscar/internal/tools/markdown"
-	"github.com/opensourcecorp/oscar/internal/tools/python"
-	"github.com/opensourcecorp/oscar/internal/tools/shell"
-	"github.com/opensourcecorp/oscar/internal/tools/version"
+	gotools "github.com/opensourcecorp/oscar/internal/tools/go"
+	mdtools "github.com/opensourcecorp/oscar/internal/tools/markdown"
+	pytools "github.com/opensourcecorp/oscar/internal/tools/python"
+	shtools "github.com/opensourcecorp/oscar/internal/tools/shell"
+	versiontools "github.com/opensourcecorp/oscar/internal/tools/version"
+	yamltools "github.com/opensourcecorp/oscar/internal/tools/yaml"
 )
 
 // GetCITaskMap assembles the overall list of CI tasks, keyed by their language/tooling name
-func GetCITaskMap() (tools.TaskMap, error) {
-	repo, err := tools.GetRepoComposition()
+func GetCITaskMap(ctx context.Context) (tools.TaskMap, error) {
+	repo, err := tools.GetRepoComposition(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("getting repo composition: %w", err)
 	}
 
 	out := make(tools.TaskMap, 0)
 	for langName, getTasksFunc := range map[string]func(tools.Repo) []tools.Tasker{
-		"Version":  version.TasksForCI,
-		"Go":       igo.TasksForCI,
-		"Python":   python.Tasks,
-		"Shell":    shell.Tasks,
-		"Markdown": markdown.Tasks,
+		"Version":  versiontools.TasksForCI,
+		"Go":       gotools.TasksForCI,
+		"Python":   pytools.Tasks,
+		"YAML":     yamltools.Tasks,
+		"Shell":    shtools.Tasks,
+		"Markdown": mdtools.Tasks,
 	} {
 		tasks := getTasksFunc(repo)
 		if len(tasks) > 0 {
@@ -48,11 +51,11 @@ func GetCITaskMap() (tools.TaskMap, error) {
 }
 
 // Run defines the behavior for running all CI tasks for the repository.
-func Run() (err error) {
+func Run(ctx context.Context) (err error) {
 	runStartTime := time.Now()
 
 	// Handle system init
-	if err := tools.InitSystem(); err != nil {
+	if err := tools.InitSystem(ctx); err != nil {
 		return fmt.Errorf("initializing system: %w", err)
 	}
 	// The mise config that oscar uses is written during init, so be sure to defer its removal here
@@ -70,7 +73,7 @@ func Run() (err error) {
 
 	// All the CI tasks that will be looped over. Will also print a summary of discovered file
 	// types.
-	ciTaskMap, err := GetCITaskMap()
+	ciTaskMap, err := GetCITaskMap(ctx)
 	if err != nil {
 		return fmt.Errorf("getting CI tasks: %w", err)
 	}
@@ -87,7 +90,7 @@ func Run() (err error) {
 	iprint.Debugf("longestInfoTextLength: %d\n", longestInfoTextLength)
 
 	// For tracking any changes to Git status etc. after each Task runs
-	gitCI, err := git.NewForCI()
+	gitCI, err := git.NewForCI(ctx)
 	if err != nil {
 		return fmt.Errorf("internal error: %w", err)
 	}
@@ -117,13 +120,13 @@ func Run() (err error) {
 			// NOTE: this error is checked later, when we can check the Run, Post, and git-diff
 			// potential errors together
 			var runErr error
-			runErr = errors.Join(runErr, t.Run())
-			runErr = errors.Join(runErr, t.Post())
+			runErr = errors.Join(runErr, t.Run(ctx))
+			runErr = errors.Join(runErr, t.Post(ctx))
 
-			if err := gitCI.Update(); err != nil {
+			if err := gitCI.Update(ctx); err != nil {
 				return fmt.Errorf("internal error: %w", err)
 			}
-			gitStatusHasChanged, err := gitCI.StatusHasChanged()
+			gitStatusHasChanged, err := gitCI.StatusHasChanged(ctx)
 			if err != nil {
 				return fmt.Errorf("internal error: %w", err)
 			}
@@ -145,7 +148,7 @@ func Run() (err error) {
 				failures = append(failures, fmt.Sprintf("%s :: %s", lang, t.InfoText()))
 
 				// Also need to reset the baseline status
-				gitCI, err = git.NewForCI()
+				gitCI, err = git.NewForCI(ctx)
 				if err != nil {
 					return fmt.Errorf("internal error: %w", err)
 				}

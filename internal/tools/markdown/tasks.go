@@ -1,6 +1,7 @@
-package markdown
+package mdtools
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -30,7 +31,7 @@ func Tasks(repo tools.Repo) []tools.Tasker {
 func (t markdownlintTask) InfoText() string { return "Lint (markdownlint)" }
 
 // Run implements [tools.Tasker.Run].
-func (t markdownlintTask) Run() error {
+func (t markdownlintTask) Run(ctx context.Context) error {
 	cfgFileContents, err := toolcfg.Files.ReadFile(filepath.Base(markdownlint.ConfigFilePath))
 	if err != nil {
 		return fmt.Errorf("reading embedded file contents: %w", err)
@@ -46,7 +47,7 @@ func (t markdownlintTask) Run() error {
 		"**/*.md",
 	}
 
-	if _, err := tools.RunCommand(args); err != nil {
+	if _, err := tools.RunCommand(ctx, args); err != nil {
 		return err
 	}
 
@@ -54,4 +55,4 @@ func (t markdownlintTask) Run() error {
 }
 
 // Post implements [tools.Tasker.Post].
-func (t markdownlintTask) Post() error { return nil }
+func (t markdownlintTask) Post(_ context.Context) error { return nil }

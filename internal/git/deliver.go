@@ -1,6 +1,7 @@
 package git
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/opensourcecorp/oscar/internal/oscarcfg"
@@ -17,13 +18,13 @@ type Delivery struct {
 }
 
 // NewForDelivery returns Git information for Delivery tasks.
-func NewForDelivery() (*Delivery, error) {
-	root, err := tools.RunCommand([]string{"git", "rev-parse", "--show-toplevel"})
+func NewForDelivery(ctx context.Context) (*Delivery, error) {
+	root, err := tools.RunCommand(ctx, []string{"git", "rev-parse", "--show-toplevel"})
 	if err != nil {
 		return nil, err
 	}
 
-	latestTag, err := tools.RunCommand([]string{"bash", "-c", "git tag --list | tail -n1"})
+	latestTag, err := tools.RunCommand(ctx, []string{"bash", "-c", "git tag --list | tail -n1"})
 	if err != nil {
 		return nil, err
 	}

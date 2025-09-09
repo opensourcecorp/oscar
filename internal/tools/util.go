@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -18,7 +19,7 @@ import (
 )
 
 // InitSystem runs setup & checks against the host itself, so that oscar can run.
-func InitSystem() error {
+func InitSystem(ctx context.Context) error {
 	fmt.Printf("Initializing the host, this might take some time... ")
 	startTime := time.Now()
 
@@ -29,7 +30,7 @@ func InitSystem() error {
 
 	for _, cmd := range requiredSystemCommands {
 		iprint.Debugf("Running '%v'\n", cmd)
-		if output, err := exec.Command(cmd[0], cmd[1:]...).CombinedOutput(); err != nil {
+		if output, err := exec.CommandContext(ctx, cmd[0], cmd[1:]...).CombinedOutput(); err != nil {
 			return fmt.Errorf(
 				"command '%s' possibly not found on PATH, cannot continue (error: %w -- output: %s)",
 				cmd[0], err, string(output),
@@ -55,7 +56,7 @@ func InitSystem() error {
 		}
 	}
 
-	if err := installMise(); err != nil {
+	if err := installMise(ctx); err != nil {
 		return fmt.Errorf("installing mise: %w", err)
 	}
 
@@ -69,10 +70,10 @@ func InitSystem() error {
 	}
 
 	// Init for task runs
-	if _, err := RunCommand([]string{consts.MiseBinPath, "trust", consts.MiseConfigFileName}); err != nil {
+	if _, err := RunCommand(ctx, []string{consts.MiseBinPath, "trust", consts.MiseConfigFileName}); err != nil {
 		return fmt.Errorf("running mise trust: %w", err)
 	}
-	if _, err := RunCommand([]string{consts.MiseBinPath, "install"}); err != nil {
+	if _, err := RunCommand(ctx, []string{consts.MiseBinPath, "install"}); err != nil {
 		return fmt.Errorf("running mise install: %w", err)
 	}
 
@@ -84,7 +85,7 @@ func InitSystem() error {
 // RunCommand takes a string slice containing an entire command & its args to run, and returns a
 // consistent error message in case of failure. It also returns the command output, in case the
 // caller needs to parse it on their own.
-func RunCommand(cmdArgs []string) (string, error) {
+func RunCommand(ctx context.Context, cmdArgs []string) (string, error) {
 	if len(cmdArgs) <= 1 {
 		return "", fmt.Errorf("internal error: not enough arguments passed to RunCommand() -- received: %v", cmdArgs)
 	}
@@ -96,7 +97,7 @@ func RunCommand(cmdArgs []string) (string, error) {
 		args = slices.Concat([]string{"exec", "--"}, cmdArgs)
 	}
 
-	cmd := exec.Command(consts.MiseBinPath, args...)
+	cmd := exec.CommandContext(ctx, consts.MiseBinPath, args...)
 	iprint.Debugf("Running '%v'\n", cmd.Args)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -110,25 +111,35 @@ func RunCommand(cmdArgs []string) (string, error) {
 }
 
 // GetRepoComposition returns a populated [Repo].
-func GetRepoComposition() (Repo, error) {
+func GetRepoComposition(ctx context.Context) (Repo, error) {
 	var errs error
 
-	hasGo, err := filesExistInTree(`ls **/*.go`)
+	hasGo, err := filesExistInTree(ctx, GetFileTypeListerCommand("go"))
 	if err != nil {
 		errs = errors.Join(errs, err)
 	}
 
-	hasPython, err := filesExistInTree(`find . -type f -name '*.py' -or -name '*.pyi'`)
+	hasPython, err := filesExistInTree(ctx, GetFileTypeListerCommand("py"))
 	if err != nil {
 		errs = errors.Join(errs, err)
 	}
 
-	hasShell, err := filesExistInTree(`find . -type f -name '*.*sh' -or -name '*.bats'`)
+	hasTerraform, err := filesExistInTree(ctx, GetFileTypeListerCommand("tf"))
 	if err != nil {
 		errs = errors.Join(errs, err)
 	}
 
-	hasMarkdown, err := filesExistInTree(`ls **/*.md`)
+	hasShell, err := filesExistInTree(ctx, GetFileTypeListerCommand("sh"))
+	if err != nil {
+		errs = errors.Join(errs, err)
+	}
+
+	hasYaml, err := filesExistInTree(ctx, GetFileTypeListerCommand("yaml"))
+	if err != nil {
+		errs = errors.Join(errs, err)
+	}
+
+	hasMarkdown, err := filesExistInTree(ctx, GetFileTypeListerCommand("md"))
 	if err != nil {
 		errs = errors.Join(errs, err)
 	}
@@ -138,14 +149,21 @@ func GetRepoComposition() (Repo, error) {
 	}
 
 	repo := Repo{
-		HasGo:       hasGo,
-		HasPython:   hasPython,
-		HasShell:    hasShell,
-		HasMarkdown: hasMarkdown,
+		HasGo:        hasGo,
+		HasPython:    hasPython,
+		HasShell:     hasShell,
+		HasTerraform: hasTerraform,
+		HasYaml:      hasYaml,
+		HasMarkdown:  hasMarkdown,
 	}
 	iprint.Debugf("repo composition: %+v\n", repo)
 
 	return repo, nil
+}
+
+// ripgrep file-type spec. Used because it supports gitignoreables
+func GetFileTypeListerCommand(fileType string) string {
+	return fmt.Sprintf(`rg --files --type '%s' || true`, fileType)
 }
 
 // RunDurationString returns a calculated duration used to indicate how long a particular task took
@@ -156,7 +174,7 @@ func RunDurationString(t time.Time) string {
 
 // installMise determines if mise needs to be installed on the host, and if so, installs it into
 // [consts.OscarHomeBin].
-func installMise() (err error) {
+func installMise(_ context.Context) (err error) {
 	miseFound := true
 	_, err = os.Stat(consts.MiseBinPath)
 	if err != nil {
@@ -206,6 +224,7 @@ func installMise() (err error) {
 		}
 	}()
 
+	// TODO: use a context func instead
 	resp, err := http.Get(miseReleaseURL)
 	if err != nil {
 		return fmt.Errorf("making GET request for mise GitHub Release: %w", err)
@@ -233,8 +252,8 @@ func installMise() (err error) {
 
 // filesExistInTree performs file discovery by allowing various tools to check if they need to run
 // based on file presence.
-func filesExistInTree(findScript string) (bool, error) {
-	cmd := exec.Command("bash", "-c", fmt.Sprintf(`
+func filesExistInTree(ctx context.Context, findScript string) (bool, error) {
+	cmd := exec.CommandContext(ctx, "bash", "-c", fmt.Sprintf(`
 		shopt -s globstar
 		%s`,
 		findScript,
