@@ -20,3 +20,6 @@ ensure that you have a container runtime available (like Docker or Podman, overr
   a language or tool you would like to see added, then those contributions are welcome. Fundamental
   changes to how `oscar` intends to operate, e.g. allowing for wholesale override of various
   linters' settings, are not.
+
+* `hEy tHeRe'S a LoT oF ShElL cOdE iN hErE?!` -- Correct. "Shelling out" is an intentional design
+  decision, and `oscar` calls out `bash` as a dependency.

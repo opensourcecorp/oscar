@@ -54,7 +54,7 @@ COPY --from=builder /go/app/build/oscar /oscar
 
 # NOTE: Docker BuildKit will skip stages it doesn't see as dependencies, so to enforce the "ci"
 # stage above to run, we need to force a dependency here
-COPY --from=ci /go/app/VERSION /VERSION
+COPY --from=ci /go/app/oscar.yaml /oscar.yaml
 
 RUN apt-get update && apt-get install -y \
         bash \
