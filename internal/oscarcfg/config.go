@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/goccy/go-yaml"
 	"github.com/opensourcecorp/oscar/internal/consts"
 	iprint "github.com/opensourcecorp/oscar/internal/print"
+	"go.yaml.in/yaml/v4"
 )
 
 // Config defines the top-level structure of oscar's config file.
@@ -38,6 +38,9 @@ type GoGitHubRelease struct {
 	Repo string `yaml:"repo" json:"repo"`
 	// BuildSources are the filepaths to the "main" packages to be built.
 	BuildSources []string `yaml:"build_sources" json:"build_sources"`
+	// Draft flags whether the Release should be left in Draft state at create-time. This can be
+	// useful to set if you want to review the Release contents before actually publishing.
+	Draft bool
 }
 
 // Get returns a populated [Config] based on the oscar config file location. If `path` is not

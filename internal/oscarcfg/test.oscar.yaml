@@ -7,3 +7,4 @@ deliver:
     repo: "test"
     build_sources:
       - "./cmd/test"
+    draft: false

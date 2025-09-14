@@ -40,7 +40,7 @@ ci-container:
 		-t $(BINNAME)-test:latest \
 		.
 
-deliver: ci
+deliver:
 	@$(RUN) go run ./cmd/$(BINNAME)/main.go deliver
 
 clean:

@@ -5,3 +5,4 @@ deliver:
     repo: "opensourcecorp/oscar"
     build_sources:
       - "./cmd/oscar"
+    draft: false
