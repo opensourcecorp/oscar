@@ -6,3 +6,6 @@ deliver:
     build_sources:
       - "./cmd/oscar"
     draft: false
+  container_image:
+    host: "ghcr.io"
+    repo: "opensourcecorp/oscar"

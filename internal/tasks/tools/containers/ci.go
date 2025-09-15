@@ -1,4 +1,4 @@
-package containerfiletools
+package containertools
 
 import (
 	"context"

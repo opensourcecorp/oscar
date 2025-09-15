@@ -128,9 +128,9 @@ func GetFileTypeListerCommand(fileType string) string {
 	// *not* find e.g. "Containerfile"
 	switch fileType {
 	case "containerfile":
-		return `rg --files --glob-case-insensitive --glob='*{Containerfile,Dockerfile}*' || true`
+		return `rg --hidden --files --glob-case-insensitive --glob='*{Containerfile,Dockerfile}*' || true`
 	default:
-		return fmt.Sprintf(`rg --files --type '%s' || true`, fileType)
+		return fmt.Sprintf(`rg --hidden --files --type '%s' || true`, fileType)
 	}
 }
 

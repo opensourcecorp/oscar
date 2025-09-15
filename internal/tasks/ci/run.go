@@ -10,7 +10,7 @@ import (
 	"github.com/opensourcecorp/oscar/internal/consts"
 	"github.com/opensourcecorp/oscar/internal/git"
 	iprint "github.com/opensourcecorp/oscar/internal/print"
-	containerfiletools "github.com/opensourcecorp/oscar/internal/tasks/tools/containerfile"
+	containertools "github.com/opensourcecorp/oscar/internal/tasks/tools/containers"
 	gotools "github.com/opensourcecorp/oscar/internal/tasks/tools/go"
 	mdtools "github.com/opensourcecorp/oscar/internal/tasks/tools/markdown"
 	pytools "github.com/opensourcecorp/oscar/internal/tasks/tools/python"
@@ -29,7 +29,7 @@ func getCITaskMap(repo taskutil.Repo) (taskutil.TaskMap, error) {
 		"Python":     pytools.NewTasksForCI,
 		// "Terraform":     tftools.NewTasksForCI,
 		"YAML":          yamltools.NewTasksForCI,
-		"Containerfile": containerfiletools.NewTasksForCI,
+		"Containerfile": containertools.NewTasksForCI,
 		"Shell":         shtools.NewTasksForCI,
 		"Markdown":      mdtools.NewTasksForCI,
 	} {

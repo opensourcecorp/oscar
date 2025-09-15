@@ -1,8 +1,11 @@
 ---
-
 # Rules found at: <https://github.com/google/yamlfmt/blob/main/docs/config-file.md#configuration-1>
-
 formatter:
   type: "basic"
-  line_ending: "lf"
+  eof_newline: true
+  force_array_style: "block"
   include_document_start: true
+  indent: 2
+  line_ending: "lf"
+  max_line_length: 100
+  trim_trailing_whitespace: true
