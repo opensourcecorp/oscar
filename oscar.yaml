@@ -7,5 +7,6 @@ deliver:
       - "./cmd/oscar"
     draft: false
   container_image:
-    host: "ghcr.io"
-    repo: "opensourcecorp/oscar"
+    registry: "ghcr.io"
+    owner: "opensourcecorp"
+    repo: "oscar"

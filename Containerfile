@@ -83,4 +83,7 @@ VOLUME /home/oscar/app
 # oscar's home directory, for caching on the host
 VOLUME /home/oscar/.oscar
 
+# So e.g. GitHub can tie the image to its source repo
+LABEL org.opencontainers.image.source https://github.com/opensourcecorp/oscar
+
 ENTRYPOINT ["/oscar"]

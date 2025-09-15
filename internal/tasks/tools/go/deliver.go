@@ -36,7 +36,7 @@ func NewTasksForDelivery(repo taskutil.Repo) ([]taskutil.Tasker, error) {
 }
 
 // InfoText implements [taskutil.Tasker.InfoText].
-func (t ghRelease) InfoText() string { return "GitHub Releases" }
+func (t ghRelease) InfoText() string { return "GitHub Release" }
 
 // Exec implements [taskutil.Tasker.Exec].
 func (t ghRelease) Exec(ctx context.Context) error {
@@ -52,6 +52,8 @@ func (t ghRelease) Exec(ctx context.Context) error {
 	if buildErr != nil {
 		return err
 	}
+
+	// TODO: actually write GH Release code
 
 	return nil
 }

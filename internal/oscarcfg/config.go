@@ -20,18 +20,31 @@ type Config struct {
 
 // Deliverables contains a field for each possible deliverable.
 type Deliverables struct {
-	// Defines the GitHub Releases the user wants to create
+	// See [GoGitHubRelease].
 	GoGitHubRelease *GoGitHubRelease `yaml:"go_github_release" json:"go_github_release"`
+	// See [ContainerImage].
+	ContainerImage *ContainerImage `yaml:"container_image" json:"container_image"`
 }
 
 // GoGitHubRelease defines the arguments necessary to create GitHub Releases for Go binaries.
 type GoGitHubRelease struct {
+	// The target GitHub Repository.
 	Repo string `yaml:"repo" json:"repo"`
-	// BuildSources are the filepaths to the "main" packages to be built.
+	// The filepaths to the "main" packages to be built.
 	BuildSources []string `yaml:"build_sources" json:"build_sources"`
-	// Draft flags whether the Release should be left in Draft state at create-time. This can be
-	// useful to set if you want to review the Release contents before actually publishing.
+	// Flags whether the Release should be left in Draft state at create-time. This can be useful to
+	// set if you want to review the Release contents before actually publishing.
 	Draft bool
+}
+
+// ContainerImage defines the arguments necessary to build & push container image artifacts.
+type ContainerImage struct {
+	// The target registry provider domain, e.g. "ghcr.io".
+	Registry string `yaml:"registry" json:"registry"`
+	// The target OCI repository name, e.g. "oscar".
+	Owner string `yaml:"owner" json:"owner"`
+	// The target OCI repository, e.g. "oscar".
+	Repo string `yaml:"repo" json:"repo"`
 }
 
 // Get returns a populated [Config] based on the oscar config file location. If `path` is not

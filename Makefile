@@ -11,14 +11,17 @@ BINNAME := oscar
 BINPATH := ./cmd/$(BINNAME)
 
 DOCKER ?= docker
-OCI_REGISTRY ?= ghcr.io
-OCI_REGISTRY_OWNER ?= opensourcecorp
+export IMAGE_REGISTRY ?= ghcr.io
+export IMAGE_REGISTRY_OWNER ?= opensourcecorp
+export IMAGE_NAME ?= $(BINNAME)
+export IMAGE_TAG ?= 'latest'
+export IMAGE_URI ?= $(IMAGE_REGISTRY)/$(IMAGE_REGISTRY_OWNER)/$(IMAGE_NAME):$(IMAGE_TAG)
 
 SHELL = /usr/bin/env bash -euo pipefail
 
-.PHONY: %
-
 all: ci
+
+FORCE:
 
 ci: clean
 	@$(RUN) go run ./cmd/$(BINNAME)/main.go ci
@@ -28,7 +31,7 @@ test: ci
 
 # NOTE: oscar builds itself IRL, but having a target here makes it easier to have the Containerfile
 # have a stage-copiable output
-build:
+build: FORCE
 	@$(RUN) go build -o ./build/oscar ./cmd/oscar
 
 ci-container:

@@ -10,6 +10,7 @@ import (
 	"github.com/opensourcecorp/oscar/internal/consts"
 	iprint "github.com/opensourcecorp/oscar/internal/print"
 	"github.com/opensourcecorp/oscar/internal/tasks/ci"
+	containertools "github.com/opensourcecorp/oscar/internal/tasks/tools/containers"
 	gotools "github.com/opensourcecorp/oscar/internal/tasks/tools/go"
 	taskutil "github.com/opensourcecorp/oscar/internal/tasks/util"
 )
@@ -19,7 +20,8 @@ import (
 func getDeliveryTaskMap(repo taskutil.Repo) (taskutil.TaskMap, error) {
 	out := make(taskutil.TaskMap)
 	for langName, getTasksFunc := range map[string]func(taskutil.Repo) ([]taskutil.Tasker, error){
-		"Go": gotools.NewTasksForDelivery,
+		"Go":         gotools.NewTasksForDelivery,
+		"OCI Images": containertools.NewTasksForDelivery,
 		// "Python":     pytools.NewTasksForDelivery,
 		// "Terraform":     tftools.NewTasksForDelivery,
 		// "Markdown":      mdtools.NewTasksForDelivery,

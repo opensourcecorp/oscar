@@ -1,5 +1,6 @@
 [settings]
 experimental = true
+jobs = 4
 
 [tools]
 github-cli = "prefix:2"

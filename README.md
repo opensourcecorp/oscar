@@ -89,7 +89,8 @@ Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for details about developing `os
 * CI additions
   * Terraform
   * protobuf
-  * R
+  * R?
   * Rust?
 * CD additions
+  * GitHub Releases
   * Publish to ghcr
