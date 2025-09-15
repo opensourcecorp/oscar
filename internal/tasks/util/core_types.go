@@ -2,6 +2,7 @@ package taskutil
 
 import (
 	"context"
+	"slices"
 	"strings"
 
 	iprint "github.com/opensourcecorp/oscar/internal/print"
@@ -17,9 +18,6 @@ type Tasker interface {
 	// Post should perform any post-run actions for the task, if necessary.
 	Post(ctx context.Context) error
 }
-
-// TaskMap aliases a map of a Task's language/tooling name to its list of Tasks.
-type TaskMap map[string][]Tasker
 
 // A Tool defines information about a tool used for running oscar's tasks. A Tool should be defined
 // if a language etc. cannot perform the task itself. For example, you would not need a Tool to
@@ -49,4 +47,20 @@ func (t Tool) RenderRunCommandArgs() []string {
 	iprint.Debugf("RenderRunCommandArgs: %#v\n", out)
 
 	return out
+}
+
+// TaskMap aliases a map of a Task's language/tooling name to its list of Tasks.
+type TaskMap map[string][]Tasker
+
+// SortedKeys sorts the keys of the [TaskMap]. Useful for iterating through Tasks in a predictable
+// order during runs.
+func (tm TaskMap) SortedKeys() []string {
+	keys := make([]string, 0)
+	for key := range tm {
+		keys = append(keys, key)
+	}
+
+	slices.Sort(keys)
+
+	return keys
 }

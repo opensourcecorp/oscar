@@ -16,18 +16,27 @@ type (
 )
 
 // NewTasksForDelivery returns the list of Delivery tasks.
-func NewTasksForDelivery(repo taskutil.Repo) []taskutil.Tasker {
-	if repo.HasGo {
-		return []taskutil.Tasker{
-			ghRelease{},
-		}
+func NewTasksForDelivery(repo taskutil.Repo) ([]taskutil.Tasker, error) {
+	cfg, err := oscarcfg.Get()
+	if err != nil {
+		return nil, err
 	}
 
-	return nil
+	if repo.HasGo && cfg.Deliver != nil {
+		out := make([]taskutil.Tasker, 0)
+
+		if cfg.Deliver.GoGitHubRelease != nil {
+			out = append(out, ghRelease{})
+		}
+
+		return out, nil
+	}
+
+	return nil, nil
 }
 
 // InfoText implements [taskutil.Tasker.InfoText].
-func (t ghRelease) InfoText() string { return "GitHub Release" }
+func (t ghRelease) InfoText() string { return "GitHub Releases" }
 
 // Exec implements [taskutil.Tasker.Exec].
 func (t ghRelease) Exec(ctx context.Context) error {
@@ -51,6 +60,10 @@ func (t ghRelease) Exec(ctx context.Context) error {
 func (t ghRelease) Post(_ context.Context) error { return nil }
 
 func goBuild(ctx context.Context, src string) error {
+	if strings.HasSuffix(src, ".go") {
+		return fmt.Errorf("provided Go build source '%s' was a file, but must be a path to a package", src)
+	}
+
 	targetDir := "build"
 
 	if err := os.RemoveAll(targetDir); err != nil {

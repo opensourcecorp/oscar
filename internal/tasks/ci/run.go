@@ -75,7 +75,9 @@ func Run(ctx context.Context) (err error) {
 		return fmt.Errorf("internal error: %w", err)
 	}
 
-	for lang, tasks := range taskMap {
+	for _, lang := range taskMap.SortedKeys() {
+		tasks := taskMap[lang]
+
 		run.PrintTaskMapBanner(lang)
 		for _, task := range tasks {
 			taskStartTime := time.Now()

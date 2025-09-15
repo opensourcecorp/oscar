@@ -18,13 +18,17 @@ import (
 // name.
 func getDeliveryTaskMap(repo taskutil.Repo) (taskutil.TaskMap, error) {
 	out := make(taskutil.TaskMap)
-	for langName, getTasksFunc := range map[string]func(taskutil.Repo) []taskutil.Tasker{
+	for langName, getTasksFunc := range map[string]func(taskutil.Repo) ([]taskutil.Tasker, error){
 		"Go": gotools.NewTasksForDelivery,
 		// "Python":     pytools.NewTasksForDelivery,
 		// "Terraform":     tftools.NewTasksForDelivery,
 		// "Markdown":      mdtools.NewTasksForDelivery,
 	} {
-		tasks := getTasksFunc(repo)
+		tasks, err := getTasksFunc(repo)
+		if err != nil {
+			return nil, err
+		}
+
 		if len(tasks) > 0 {
 			out[langName] = tasks
 		}
@@ -65,7 +69,9 @@ func Run(ctx context.Context) (err error) {
 		return err
 	}
 
-	for lang, tasks := range taskMap {
+	for _, lang := range taskMap.SortedKeys() {
+		tasks := taskMap[lang]
+
 		run.PrintTaskMapBanner(lang)
 
 		for _, task := range tasks {

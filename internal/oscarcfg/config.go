@@ -14,23 +14,14 @@ type Config struct {
 	// Version is the version string for the codebase.
 	Version string `yaml:"version" json:"version"`
 	// Deliver is the collection of possible deliverable artifacts.
-	Deliver Deliverables `yaml:"deliver" json:"deliver"`
+	Deliver *Deliverables `yaml:"deliver" json:"deliver"`
 	// Deploy Deployables  `yaml:"deploy" json:"deploy"`
 }
 
 // Deliverables contains a field for each possible deliverable.
 type Deliverables struct {
-	// GoBinaries lists out the Go binaries the user wants to build.
-	GoBinaries      []GoBinary      `yaml:"go_binaries" json:"go_binaries"`
-	GoGitHubRelease GoGitHubRelease `yaml:"go_github_release" json:"go_github_release"`
-}
-
-// GoBinary defines the arguments necessary to build Go binaries. While most other Go-related tasks
-// should handle the builds as well, this deliverable type is here to allow users to handle the
-// resulting artifacts on their own.
-type GoBinary struct {
-	// BuildSource is the filepath to the "main" package to be built.
-	BuildSource string `yaml:"build_source" json:"build_source"`
+	// Defines the GitHub Releases the user wants to create
+	GoGitHubRelease *GoGitHubRelease `yaml:"go_github_release" json:"go_github_release"`
 }
 
 // GoGitHubRelease defines the arguments necessary to create GitHub Releases for Go binaries.
