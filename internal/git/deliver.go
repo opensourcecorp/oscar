@@ -28,6 +28,7 @@ func NewForDelivery(ctx context.Context) (*Delivery, error) {
 	if err != nil {
 		return nil, err
 	}
+	iprint.Debugf("latest Git tag: '%s'\n", latestTag)
 
 	cfg, err := oscarcfg.Get()
 	if err != nil {

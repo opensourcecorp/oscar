@@ -45,7 +45,7 @@ type GoGitHubRelease struct {
 
 // Get returns a populated [Config] based on the oscar config file location. If `path` is not
 // provided, it will default to looking in the calling directory.
-func Get(pathOverride ...string) (*Config, error) {
+func Get(pathOverride ...string) (Config, error) {
 	path := consts.DefaultOscarCfgFileName
 
 	// Handle the override so we can test this function, and use it in other ways (like checking the
@@ -56,14 +56,14 @@ func Get(pathOverride ...string) (*Config, error) {
 
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("reading oscar config file: %w", err)
+		return Config{}, fmt.Errorf("reading oscar config file: %w", err)
 	}
 	iprint.Debugf("data read from oscar config file: %s\n", string(data))
 
 	var cfg Config
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		return nil, fmt.Errorf("unmarshalling oscar config file '%s': %w", path, err)
+		return Config{}, fmt.Errorf("unmarshalling oscar config file '%s': %w", path, err)
 	}
 
-	return &cfg, nil
+	return cfg, nil
 }

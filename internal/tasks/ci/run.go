@@ -39,9 +39,7 @@ func getCITaskMap(repo taskutil.Repo) (taskutil.TaskMap, error) {
 		}
 	}
 
-	if len(out) > 0 {
-		iprint.Debugf("getCITaskMap output: %#v\n", out)
-	}
+	iprint.Debugf("getCITaskMap output: %#v\n", out)
 
 	return out, nil
 }
@@ -55,24 +53,21 @@ func Run(ctx context.Context) (err error) {
 		}
 	}()
 
-	repo, err := taskutil.GetRepoComposition(ctx)
-	if err != nil {
-		return fmt.Errorf("getting repo composition: %w", err)
-	}
-
-	taskMap, err := getCITaskMap(repo)
-	if err != nil {
-		return err
-	}
-
 	run, err := taskutil.NewRun(ctx, "CI")
 	if err != nil {
 		return fmt.Errorf("internal error setting up run info: %w", err)
 	}
 
-	run.PrintRunTypeBanner()
-
+	repo, err := taskutil.NewRepo(ctx)
+	if err != nil {
+		return fmt.Errorf("getting repo composition: %w", err)
+	}
 	fmt.Print(repo.String())
+
+	taskMap, err := getCITaskMap(repo)
+	if err != nil {
+		return err
+	}
 
 	// For tracking any changes to Git status etc. after each CI Task runs
 	gitCI, err := git.NewForCI(ctx)

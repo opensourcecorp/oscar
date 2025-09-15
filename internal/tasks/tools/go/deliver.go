@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/opensourcecorp/oscar/internal/oscarcfg"
 	taskutil "github.com/opensourcecorp/oscar/internal/tasks/util"
 )
 
@@ -14,13 +15,11 @@ type (
 	ghRelease struct{ taskutil.Tool }
 )
 
-// TasksForDelivery returns the list of Delivery tasks.
-func TasksForDelivery(repo taskutil.Repo) []taskutil.Tasker {
+// NewTasksForDelivery returns the list of Delivery tasks.
+func NewTasksForDelivery(repo taskutil.Repo) []taskutil.Tasker {
 	if repo.HasGo {
 		return []taskutil.Tasker{
-			ghRelease{
-				Tool: taskutil.Tool{},
-			},
+			ghRelease{},
 		}
 	}
 
@@ -32,6 +31,26 @@ func (t ghRelease) InfoText() string { return "GitHub Release" }
 
 // Exec implements [taskutil.Tasker.Exec].
 func (t ghRelease) Exec(ctx context.Context) error {
+	cfg, err := oscarcfg.Get()
+	if err != nil {
+		return err
+	}
+
+	var buildErr error
+	for _, src := range cfg.Deliver.GoGitHubRelease.BuildSources {
+		buildErr = goBuild(ctx, src)
+	}
+	if buildErr != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Post implements [taskutil.Tasker.Post].
+func (t ghRelease) Post(_ context.Context) error { return nil }
+
+func goBuild(ctx context.Context, src string) error {
 	targetDir := "build"
 
 	if err := os.RemoveAll(targetDir); err != nil {
@@ -54,9 +73,7 @@ func (t ghRelease) Exec(ctx context.Context) error {
 		goos := splits[0]
 		goarch := splits[1]
 
-		binName := "oscar"
-
-		src := "./cmd/oscar"
+		binName := filepath.Base(src)
 		target := filepath.Join(targetDir, fmt.Sprintf("%s-%s-%s", binName, goos, goarch))
 
 		if _, err := taskutil.RunCommand(ctx, []string{"bash", "-c", fmt.Sprintf(`
@@ -76,6 +93,3 @@ func (t ghRelease) Exec(ctx context.Context) error {
 
 	return nil
 }
-
-// Post implements [taskutil.Tasker.Post].
-func (t ghRelease) Post(_ context.Context) error { return nil }

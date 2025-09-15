@@ -19,12 +19,10 @@ import (
 func getDeliveryTaskMap(repo taskutil.Repo) (taskutil.TaskMap, error) {
 	out := make(taskutil.TaskMap)
 	for langName, getTasksFunc := range map[string]func(taskutil.Repo) []taskutil.Tasker{
-		// "Version": versiontools.TasksForDelivery,
-		"Go": gotools.TasksForDelivery,
-		// "Python":   pytools.TasksForDelivery,
-		// "YAML": yamltools.TasksForDelivery,
-		// "Shell":    shtools.TasksForDelivery,
-		// "Markdown": mdtools.TasksForDelivery,
+		"Go": gotools.NewTasksForDelivery,
+		// "Python":     pytools.NewTasksForDelivery,
+		// "Terraform":     tftools.NewTasksForDelivery,
+		// "Markdown":      mdtools.NewTasksForDelivery,
 	} {
 		tasks := getTasksFunc(repo)
 		if len(tasks) > 0 {
@@ -32,15 +30,14 @@ func getDeliveryTaskMap(repo taskutil.Repo) (taskutil.TaskMap, error) {
 		}
 	}
 
-	if len(out) > 0 {
-		iprint.Debugf("getDeliveryTaskMap output: %#v\n", out)
-	}
+	iprint.Debugf("getDeliveryTaskMap output: %#v\n", out)
 
 	return out, nil
 }
 
 // Run defines the behavior for running all Delivery tasks for the repository.
 func Run(ctx context.Context) (err error) {
+	// We intentionally run CI tasks before allowing any Delivery tasks to begin
 	if err := ci.Run(ctx); err != nil {
 		return fmt.Errorf("running CI tasks before Delivery tasks: %w", err)
 	}
@@ -52,24 +49,21 @@ func Run(ctx context.Context) (err error) {
 		}
 	}()
 
-	repo, err := taskutil.GetRepoComposition(ctx)
-	if err != nil {
-		return fmt.Errorf("getting repo composition: %w", err)
-	}
-
-	taskMap, err := getDeliveryTaskMap(repo)
-	if err != nil {
-		return err
-	}
-
 	run, err := taskutil.NewRun(ctx, "Deliver")
 	if err != nil {
 		return fmt.Errorf("internal error setting up run info: %w", err)
 	}
 
-	run.PrintRunTypeBanner()
-
+	repo, err := taskutil.NewRepo(ctx)
+	if err != nil {
+		return fmt.Errorf("getting repo composition: %w", err)
+	}
 	fmt.Print(repo.String())
+
+	taskMap, err := getDeliveryTaskMap(repo)
+	if err != nil {
+		return err
+	}
 
 	for lang, tasks := range taskMap {
 		run.PrintTaskMapBanner(lang)
