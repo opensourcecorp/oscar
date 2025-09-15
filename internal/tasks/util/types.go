@@ -16,8 +16,8 @@ type Tasker interface {
 	Post(ctx context.Context) error
 }
 
-// TasksMap aliases a map of a Task's language/tooling name to its list of Tasks.
-type TasksMap map[string][]Tasker
+// TaskMap aliases a map of a Task's language/tooling name to its list of Tasks.
+type TaskMap map[string][]Tasker
 
 // A Tool defines information about a tool used for running oscar's tasks. A Tool should be defined
 // if a language etc. cannot perform the task itself. For example, you would not need a Tool to
@@ -33,13 +33,11 @@ type Tool struct {
 // A Run holds metadata about an instance of an oscar subcommand run, e.g. a list of Tasks for the
 // `ci` subcommand.
 type Run struct {
-	// TasksMap                 TasksMap
+	// The "type" of Run as an informative string, i.e. "CI", "Deliver", etc. Used in
+	// banner-printing in [Run.PrintRunTypeBanner].
+	Type string
 	// A timestamp for storing when the overall run started.
 	StartTime time.Time
-	// The length of the longest language/tooling name string.
-	LongestLanguageNameLength int
-	// The length of the longest string output by [Tasker.InfoText].
-	LongestInfoTextLength int
 	// Keeps track of all task failures.
 	Failures []string
 }

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/opensourcecorp/oscar/internal/consts"
@@ -21,14 +20,9 @@ import (
 	taskutil "github.com/opensourcecorp/oscar/internal/tasks/util"
 )
 
-// getCITasksMap assembles the overall list of CI tasks, keyed by their language/tooling name
-func getCITasksMap(ctx context.Context) (taskutil.TasksMap, error) {
-	repo, err := taskutil.GetRepoComposition(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("getting repo composition: %w", err)
-	}
-
-	out := make(taskutil.TasksMap)
+// getCITaskMap assembles the overall list of CI tasks, keyed by their language/tooling name
+func getCITaskMap(repo taskutil.Repo) (taskutil.TaskMap, error) {
+	out := make(taskutil.TaskMap)
 	for langName, getTasksFunc := range map[string]func(taskutil.Repo) []taskutil.Tasker{
 		"Versioning": versiontools.NewTasksForCI,
 		"Go":         gotools.NewTasksForCI,
@@ -46,8 +40,7 @@ func getCITasksMap(ctx context.Context) (taskutil.TasksMap, error) {
 	}
 
 	if len(out) > 0 {
-		fmt.Print(repo.String())
-		iprint.Debugf("getCITasksMap output: %#v\n", out)
+		iprint.Debugf("getCITaskMap output: %#v\n", out)
 	}
 
 	return out, nil
@@ -62,15 +55,24 @@ func Run(ctx context.Context) (err error) {
 		}
 	}()
 
-	tasksMap, err := getCITasksMap(ctx)
+	repo, err := taskutil.GetRepoComposition(ctx)
+	if err != nil {
+		return fmt.Errorf("getting repo composition: %w", err)
+	}
+
+	taskMap, err := getCITaskMap(repo)
 	if err != nil {
 		return err
 	}
 
-	run, err := taskutil.NewRun(ctx, tasksMap)
+	run, err := taskutil.NewRun(ctx, "CI")
 	if err != nil {
 		return fmt.Errorf("internal error setting up run info: %w", err)
 	}
+
+	run.PrintRunTypeBanner()
+
+	fmt.Print(repo.String())
 
 	// For tracking any changes to Git status etc. after each CI Task runs
 	gitCI, err := git.NewForCI(ctx)
@@ -78,18 +80,11 @@ func Run(ctx context.Context) (err error) {
 		return fmt.Errorf("internal error: %w", err)
 	}
 
-	for lang, tasks := range tasksMap {
-		langNameBannerPadding := strings.Repeat("=", run.LongestLanguageNameLength-len(lang)/2)
-		fmt.Printf(
-			"%s%s %s %s%s\n",
-			strings.Repeat("=", 24), langNameBannerPadding, lang, langNameBannerPadding, strings.Repeat("=", 24),
-		)
+	for lang, tasks := range taskMap {
+		run.PrintTaskMapBanner(lang)
 		for _, task := range tasks {
 			taskStartTime := time.Now()
-
-			taskBannerPadding := strings.Repeat(".", run.LongestInfoTextLength-len(task.InfoText()))
-			// NOTE: no trailing newline on purpose
-			fmt.Printf("> %s %s............", task.InfoText(), taskBannerPadding)
+			run.PrintTaskBanner(task)
 
 			// NOTE: this error is checked later, when we can check the Run, Post, and git-diff
 			// potential errors together
@@ -133,16 +128,10 @@ func Run(ctx context.Context) (err error) {
 	}
 
 	if len(run.Failures) > 0 {
-		iprint.Errorf("\n================================================================\n")
-		iprint.Errorf("The following checks failed and/or caused a git diff: (%s)\n", taskutil.RunDurationString(run.StartTime))
-		for _, f := range run.Failures {
-			iprint.Errorf("- %s\n", f)
-		}
-		iprint.Errorf("================================================================\n\n")
-		return errors.New("one or more CI checks failed")
+		return run.ReportFailure(err)
 	}
 
-	fmt.Printf("All checks passed! (%s)\n", taskutil.RunDurationString(run.StartTime))
+	run.ReportSuccess()
 
 	return err
 }

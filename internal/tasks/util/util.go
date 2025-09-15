@@ -83,33 +83,59 @@ func InitSystem(ctx context.Context) error {
 }
 
 // NewRun returns a populated [Run].
-func NewRun(ctx context.Context, tasksMap TasksMap) (Run, error) {
+func NewRun(ctx context.Context, runType string) (Run, error) {
 	// Handle system init
 	if err := InitSystem(ctx); err != nil {
 		return Run{}, fmt.Errorf("initializing system: %w", err)
 	}
 
-	// Vars for determining text padding in output banners
-	var (
-		longestLanguageNameLength int
-		longestInfoTextLength     int
-	)
-	for lang, taskMap := range tasksMap {
-		longestLanguageNameLength = max(longestLanguageNameLength, len(lang))
-		for _, task := range taskMap {
-			longestInfoTextLength = max(longestInfoTextLength, len(task.InfoText()))
-		}
-	}
-	iprint.Debugf("longestLanguageNameLength: %d\n", longestLanguageNameLength)
-	iprint.Debugf("longestInfoTextLength: %d\n", longestInfoTextLength)
-
 	return Run{
-		// TasksMap:                  tasksMap,
-		StartTime:                 time.Now(),
-		LongestLanguageNameLength: longestLanguageNameLength,
-		LongestInfoTextLength:     longestInfoTextLength,
-		Failures:                  make([]string, 0),
+		Type:      runType,
+		StartTime: time.Now(),
+		Failures:  make([]string, 0),
 	}, nil
+}
+
+// PrintRunTypeBanner prints a banner about the type of [Run] underway.
+func (run Run) PrintRunTypeBanner() {
+	padding := 9
+	fmt.Printf("%s\n", strings.Repeat("@", len(run.Type)+padding))
+	fmt.Printf("@ Run: %s @\n", run.Type)
+	fmt.Printf("%s\n\n", strings.Repeat("@", len(run.Type)+padding))
+}
+
+// PrintTaskMapBanner prints a banner about the [TaskMap] being run.
+func (run Run) PrintTaskMapBanner(lang string) {
+	fmt.Printf(
+		"=== %s %s>\n",
+		lang, strings.Repeat("=", 64-len(lang)),
+	)
+}
+
+// PrintTaskBanner prints a banner about the Task being run.
+func (run Run) PrintTaskBanner(task Tasker) {
+	// NOTE: no trailing newline on purpose
+	fmt.Printf("> %s %s............", task.InfoText(), strings.Repeat(".", 32-len(task.InfoText())))
+}
+
+// ReportSuccess prints information about the success of a [Run].
+func (run Run) ReportSuccess() {
+	fmt.Printf("All tasks succeeded! (%s)\n\n", RunDurationString(run.StartTime))
+}
+
+// ReportFailure prints information about the failure of a [Run]. It takes an `error` arg in case
+// the caller is expecting to return a joined error because of e.g. deferred calls or later-checked
+// errors that an outer variable already holds.
+func (run Run) ReportFailure(err error) error {
+	iprint.Errorf("\n%s\n", strings.Repeat("=", 65))
+	iprint.Errorf("The following tasks failed: (%s)\n", RunDurationString(run.StartTime))
+	for _, f := range run.Failures {
+		iprint.Errorf("- %s\n", f)
+	}
+	iprint.Errorf("%s\n\n", strings.Repeat("=", 65))
+
+	err = errors.Join(err, errors.New("one or more tasks failed"))
+	return err
 }
 
 // RunCommand takes a string slice containing a command & its args to run, and returns a consistent

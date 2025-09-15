@@ -5,24 +5,19 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/opensourcecorp/oscar/internal/consts"
 	iprint "github.com/opensourcecorp/oscar/internal/print"
+	"github.com/opensourcecorp/oscar/internal/tasks/ci"
 	gotools "github.com/opensourcecorp/oscar/internal/tasks/tools/go"
 	taskutil "github.com/opensourcecorp/oscar/internal/tasks/util"
 )
 
-// getDeliveryTasksMap assembles the overall list of Delivery tasks, keyed by their language/tooling
+// getDeliveryTaskMap assembles the overall list of Delivery tasks, keyed by their language/tooling
 // name.
-func getDeliveryTasksMap(ctx context.Context) (taskutil.TasksMap, error) {
-	repo, err := taskutil.GetRepoComposition(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("getting repo composition: %w", err)
-	}
-
-	out := make(taskutil.TasksMap)
+func getDeliveryTaskMap(repo taskutil.Repo) (taskutil.TaskMap, error) {
+	out := make(taskutil.TaskMap)
 	for langName, getTasksFunc := range map[string]func(taskutil.Repo) []taskutil.Tasker{
 		// "Version": versiontools.TasksForDelivery,
 		"Go": gotools.TasksForDelivery,
@@ -38,8 +33,7 @@ func getDeliveryTasksMap(ctx context.Context) (taskutil.TasksMap, error) {
 	}
 
 	if len(out) > 0 {
-		fmt.Print(repo.String())
-		iprint.Debugf("getDeliveryTasksMap output: %#v\n", out)
+		iprint.Debugf("getDeliveryTaskMap output: %#v\n", out)
 	}
 
 	return out, nil
@@ -47,6 +41,10 @@ func getDeliveryTasksMap(ctx context.Context) (taskutil.TasksMap, error) {
 
 // Run defines the behavior for running all Delivery tasks for the repository.
 func Run(ctx context.Context) (err error) {
+	if err := ci.Run(ctx); err != nil {
+		return fmt.Errorf("running CI tasks before Delivery tasks: %w", err)
+	}
+
 	// The mise config that oscar uses is written during init, so be sure to defer its removal here
 	defer func() {
 		if rmErr := os.RemoveAll(consts.MiseConfigFileName); rmErr != nil {
@@ -54,29 +52,31 @@ func Run(ctx context.Context) (err error) {
 		}
 	}()
 
-	tasksMap, err := getDeliveryTasksMap(ctx)
+	repo, err := taskutil.GetRepoComposition(ctx)
+	if err != nil {
+		return fmt.Errorf("getting repo composition: %w", err)
+	}
+
+	taskMap, err := getDeliveryTaskMap(repo)
 	if err != nil {
 		return err
 	}
 
-	run, err := taskutil.NewRun(ctx, tasksMap)
+	run, err := taskutil.NewRun(ctx, "Deliver")
 	if err != nil {
 		return fmt.Errorf("internal error setting up run info: %w", err)
 	}
 
-	for lang, tasks := range tasksMap {
-		langNameBannerPadding := strings.Repeat("=", run.LongestLanguageNameLength-len(lang)/2)
-		fmt.Printf(
-			"%s%s %s %s%s\n",
-			strings.Repeat("=", 24), langNameBannerPadding, lang, langNameBannerPadding, strings.Repeat("=", 24),
-		)
+	run.PrintRunTypeBanner()
+
+	fmt.Print(repo.String())
+
+	for lang, tasks := range taskMap {
+		run.PrintTaskMapBanner(lang)
 
 		for _, task := range tasks {
 			taskStartTime := time.Now()
-
-			taskBannerPadding := strings.Repeat(".", run.LongestInfoTextLength-len(task.InfoText()))
-			// NOTE: no trailing newline on purpose
-			fmt.Printf("> %s %s............", task.InfoText(), taskBannerPadding)
+			run.PrintTaskBanner(task)
 
 			// NOTE: this error is checked later, when we can check the Run, Post, and git-diff
 			// potential errors together
@@ -96,16 +96,10 @@ func Run(ctx context.Context) (err error) {
 	}
 
 	if len(run.Failures) > 0 {
-		iprint.Errorf("\n================================================================\n")
-		iprint.Errorf("The following tasks failed: (%s)\n", taskutil.RunDurationString(run.StartTime))
-		for _, f := range run.Failures {
-			iprint.Errorf("- %s\n", f)
-		}
-		iprint.Errorf("================================================================\n\n")
-		return errors.New("one or more Delivery tasks failed")
+		return run.ReportFailure(err)
 	}
 
-	fmt.Printf("All tasks succeeded! (%s)\n", taskutil.RunDurationString(run.StartTime))
+	run.ReportSuccess()
 
 	return err
 }
