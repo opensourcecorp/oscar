@@ -7,31 +7,31 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/opensourcecorp/oscar/internal/tools"
+	taskutil "github.com/opensourcecorp/oscar/internal/tasks/util"
 )
 
 type (
-	ghRelease struct{}
+	ghRelease struct{ taskutil.Tool }
 )
 
-var deliveryTasks = []tools.Tasker{
-	ghRelease{},
-}
-
 // TasksForDelivery returns the list of Delivery tasks.
-func TasksForDelivery(repo tools.Repo) []tools.Tasker {
+func TasksForDelivery(repo taskutil.Repo) []taskutil.Tasker {
 	if repo.HasGo {
-		return deliveryTasks
+		return []taskutil.Tasker{
+			ghRelease{
+				Tool: taskutil.Tool{},
+			},
+		}
 	}
 
 	return nil
 }
 
-// InfoText implements [tools.Tasker.InfoText].
+// InfoText implements [taskutil.Tasker.InfoText].
 func (t ghRelease) InfoText() string { return "GitHub Release" }
 
-// Run implements [tools.Tasker.Run].
-func (t ghRelease) Run(ctx context.Context) error {
+// Exec implements [taskutil.Tasker.Exec].
+func (t ghRelease) Exec(ctx context.Context) error {
 	targetDir := "build"
 
 	if err := os.RemoveAll(targetDir); err != nil {
@@ -59,7 +59,7 @@ func (t ghRelease) Run(ctx context.Context) error {
 		src := "./cmd/oscar"
 		target := filepath.Join(targetDir, fmt.Sprintf("%s-%s-%s", binName, goos, goarch))
 
-		if _, err := tools.RunCommand(ctx, []string{"bash", "-c", fmt.Sprintf(`
+		if _, err := taskutil.RunCommand(ctx, []string{"bash", "-c", fmt.Sprintf(`
 			CGO_ENABLED=0 \
 			GOOS=%s GOARCH=%s \
 			go build -ldflags '-extldflags "-static"' -o %s %s`,
@@ -77,5 +77,5 @@ func (t ghRelease) Run(ctx context.Context) error {
 	return nil
 }
 
-// Post implements [tools.Tasker.Post].
+// Post implements [taskutil.Tasker.Post].
 func (t ghRelease) Post(_ context.Context) error { return nil }

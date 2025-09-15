@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	iprint "github.com/opensourcecorp/oscar/internal/print"
-	"github.com/opensourcecorp/oscar/internal/tools"
+	taskutil "github.com/opensourcecorp/oscar/internal/tasks/util"
 )
 
 // CI defines metadata & behavior for CI tasks.
@@ -92,7 +92,7 @@ func (g *CI) StatusHasChanged(ctx context.Context) (bool, error) {
 // getRawStatus returns a slightly-modified "git status" output, so that calling tools can parse it
 // more easily.
 func getRawStatus(ctx context.Context) (Status, error) {
-	outputBytes, err := tools.RunCommand(ctx, []string{"git", "status", "--porcelain"})
+	outputBytes, err := taskutil.RunCommand(ctx, []string{"git", "status", "--porcelain"})
 	if err != nil {
 		return Status{}, fmt.Errorf("getting git status output: %w", err)
 	}

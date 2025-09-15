@@ -1,0 +1,9 @@
+---
+failure-threshold: "style"
+# Rules found at: https://github.com/hadolint/hadolint?tab=readme-ov-file#rules
+ignored:
+  - "DL3008"
+  - "DL3018"
+  - "DL3033"
+  - "DL3037"
+  - "DL3041"

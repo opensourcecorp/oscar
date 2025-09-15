@@ -1,4 +1,4 @@
-package tools
+package taskutil
 
 import (
 	"context"
@@ -82,9 +82,39 @@ func InitSystem(ctx context.Context) error {
 	return nil
 }
 
-// RunCommand takes a string slice containing an entire command & its args to run, and returns a
-// consistent error message in case of failure. It also returns the command output, in case the
-// caller needs to parse it on their own.
+// NewRun returns a populated [Run].
+func NewRun(ctx context.Context, tasksMap TasksMap) (Run, error) {
+	// Handle system init
+	if err := InitSystem(ctx); err != nil {
+		return Run{}, fmt.Errorf("initializing system: %w", err)
+	}
+
+	// Vars for determining text padding in output banners
+	var (
+		longestLanguageNameLength int
+		longestInfoTextLength     int
+	)
+	for lang, taskMap := range tasksMap {
+		longestLanguageNameLength = max(longestLanguageNameLength, len(lang))
+		for _, task := range taskMap {
+			longestInfoTextLength = max(longestInfoTextLength, len(task.InfoText()))
+		}
+	}
+	iprint.Debugf("longestLanguageNameLength: %d\n", longestLanguageNameLength)
+	iprint.Debugf("longestInfoTextLength: %d\n", longestInfoTextLength)
+
+	return Run{
+		// TasksMap:                  tasksMap,
+		StartTime:                 time.Now(),
+		LongestLanguageNameLength: longestLanguageNameLength,
+		LongestInfoTextLength:     longestInfoTextLength,
+		Failures:                  make([]string, 0),
+	}, nil
+}
+
+// RunCommand takes a string slice containing a command & its args to run, and returns a consistent
+// error message in case of failure. It also returns the command output, in case the caller needs to
+// parse it on their own.
 func RunCommand(ctx context.Context, cmdArgs []string) (string, error) {
 	if len(cmdArgs) <= 1 {
 		return "", fmt.Errorf("internal error: not enough arguments passed to RunCommand() -- received: %v", cmdArgs)
@@ -124,12 +154,17 @@ func GetRepoComposition(ctx context.Context) (Repo, error) {
 		errs = errors.Join(errs, err)
 	}
 
+	hasShell, err := filesExistInTree(ctx, GetFileTypeListerCommand("sh"))
+	if err != nil {
+		errs = errors.Join(errs, err)
+	}
+
 	hasTerraform, err := filesExistInTree(ctx, GetFileTypeListerCommand("tf"))
 	if err != nil {
 		errs = errors.Join(errs, err)
 	}
 
-	hasShell, err := filesExistInTree(ctx, GetFileTypeListerCommand("sh"))
+	hasContainerfile, err := filesExistInTree(ctx, GetFileTypeListerCommand("containerfile"))
 	if err != nil {
 		errs = errors.Join(errs, err)
 	}
@@ -149,31 +184,65 @@ func GetRepoComposition(ctx context.Context) (Repo, error) {
 	}
 
 	repo := Repo{
-		HasGo:        hasGo,
-		HasPython:    hasPython,
-		HasShell:     hasShell,
-		HasTerraform: hasTerraform,
-		HasYaml:      hasYaml,
-		HasMarkdown:  hasMarkdown,
+		HasGo:            hasGo,
+		HasPython:        hasPython,
+		HasShell:         hasShell,
+		HasTerraform:     hasTerraform,
+		HasContainerfile: hasContainerfile,
+		HasYaml:          hasYaml,
+		HasMarkdown:      hasMarkdown,
 	}
 	iprint.Debugf("repo composition: %+v\n", repo)
 
 	return repo, nil
 }
 
-// ripgrep file-type spec. Used because it supports gitignoreables
+// GetFileTypeListerCommand takes a [ripgrep]-known file type, and returns a slice containing a
+// command & its args to find matching files. ripgrep is used as the default file-finder across the
+// codebase because not only is it fast, but it also supports files like `.gitignore` without any
+// extra configuration.
+//
+// [ripgrep]: https://github.com/BurntSushi/ripgrep
 func GetFileTypeListerCommand(fileType string) string {
-	return fmt.Sprintf(`rg --files --type '%s' || true`, fileType)
+	// NOTE: there are some special cases we need to handle, like how ripgrep understands "docker"
+	// as a file type arg (and it will find files matching the glob "*Dockerfile*"), but it will
+	// *not* find e.g. "Containerfile"
+	switch fileType {
+	case "containerfile":
+		return `rg --files --glob-case-insensitive --glob='*{Containerfile,Dockerfile}*' || true`
+	default:
+		return fmt.Sprintf(`rg --files --type '%s' || true`, fileType)
+	}
 }
 
-// RunDurationString returns a calculated duration used to indicate how long a particular task took
-// to run.
+// RunDurationString returns a calculated duration used to indicate how long a particular Task (or
+// set of Tasks) took to run.
 func RunDurationString(t time.Time) string {
 	return fmt.Sprintf("t: %s", time.Since(t).Round(time.Second/1000).String())
 }
 
-// installMise determines if mise needs to be installed on the host, and if so, installs it into
-// [consts.OscarHomeBin].
+// RenderRunCommandArgs uses [Tool.RunArgs] and does naive templating to replace certain values
+// before being used.
+//
+// This is useful because when instantiating [Tasker]s, sometimes the fields need to be
+// self-referential within the struct. For example, if a [Tool.RunArgs] needs to specify a config
+// file path, but it can't know that value until instantiation (even though it's likely defined
+// right below it in [Tool.ConfigFilePath]), you can write the `RunArgs` to have a
+// `{{ConfigFilePath}}` placeholder that will be interpolated when calling this function.
+func (t Tool) RenderRunCommandArgs() []string {
+	out := make([]string, len(t.RunArgs))
+	for i, arg := range t.RunArgs {
+		out[i] = strings.ReplaceAll(arg, `{{ConfigFilePath}}`, t.ConfigFilePath)
+	}
+
+	iprint.Debugf("RenderRunCommandArgs: %#v\n", out)
+
+	return out
+}
+
+// installMise installs [mise] into [consts.OscarHomeBin], if not found there.
+//
+// [mise]: https://mise.jdx.dev
 func installMise(_ context.Context) (err error) {
 	miseFound := true
 	_, err = os.Stat(consts.MiseBinPath)
@@ -188,6 +257,7 @@ func installMise(_ context.Context) (err error) {
 	}
 
 	if miseFound {
+		// TODO: mise version check
 		iprint.Debugf("mise found, nothing to do\n")
 		return
 	}

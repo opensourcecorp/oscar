@@ -6,30 +6,29 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 
 	"github.com/opensourcecorp/oscar/internal/consts"
 	"github.com/opensourcecorp/oscar/internal/oscarcfg"
 	iprint "github.com/opensourcecorp/oscar/internal/print"
 	"github.com/opensourcecorp/oscar/internal/semver"
-	"github.com/opensourcecorp/oscar/internal/tools"
+	taskutil "github.com/opensourcecorp/oscar/internal/tasks/util"
 )
 
-type versionCI struct{}
+type versionCI struct{ taskutil.Tool }
 
-var tasks = []tools.Tasker{
-	versionCI{},
+// NewTasksForCI returns the list of CI tasks.
+func NewTasksForCI(_ taskutil.Repo) []taskutil.Tasker {
+	return []taskutil.Tasker{
+		versionCI{},
+	}
 }
 
-// TasksForCI returns the list of CI tasks.
-func TasksForCI(_ tools.Repo) []tools.Tasker {
-	return tasks
-}
-
-// InfoText implements [tools.Tasker.InfoText].
+// InfoText implements [taskutil.Tasker.InfoText].
 func (t versionCI) InfoText() string { return "Versioning checks" }
 
-// Run implements [tools.Tasker.Run].
-func (t versionCI) Run(ctx context.Context) (err error) {
+// Exec implements [taskutil.Tasker.Exec].
+func (t versionCI) Exec(ctx context.Context) (err error) {
 	cfg, err := oscarcfg.Get()
 	if err != nil {
 		return fmt.Errorf("getting oscar config: %w", err)
@@ -51,12 +50,14 @@ func (t versionCI) Run(ctx context.Context) (err error) {
 		}
 	}()
 
-	remote, err := tools.RunCommand(ctx, []string{"git", "remote", "get-url", "origin"})
+	remote, err := taskutil.RunCommand(ctx, []string{"git", "remote", "get-url", "origin"})
 	if err != nil {
 		return fmt.Errorf("determining git root: %w", err)
 	}
 
-	if _, err := tools.RunCommand(ctx, []string{"git", "clone", "--depth", "1", remote, tmpCloneDir}); err != nil {
+	remote = canonicalizeGitRemote(remote)
+
+	if _, err := taskutil.RunCommand(ctx, []string{"git", "clone", "--depth", "1", remote, tmpCloneDir}); err != nil {
 		return fmt.Errorf("cloning repo source to temp location: %w", err)
 	}
 
@@ -72,7 +73,7 @@ func (t versionCI) Run(ctx context.Context) (err error) {
 	//
 	// TODO: update internal git package to have a type with ALL this info so I stop copy-pasting
 	// shell-outs around
-	branch, err := tools.RunCommand(ctx, []string{"git", "rev-parse", "--abbrev-ref", "HEAD"})
+	branch, err := taskutil.RunCommand(ctx, []string{"git", "rev-parse", "--abbrev-ref", "HEAD"})
 	if err != nil {
 		return fmt.Errorf("checking current Git branch/ref: %w", err)
 	}
@@ -90,5 +91,15 @@ func (t versionCI) Run(ctx context.Context) (err error) {
 	return nil
 }
 
-// Post implements [tools.Tasker.Post].
+// Post implements [taskutil.Tasker.Post].
 func (t versionCI) Post(_ context.Context) error { return nil }
+
+// canonicalizeGitRemote converts a Git remote string to be in canonical HTTPS format.
+func canonicalizeGitRemote(remote string) string {
+	gitSSHRemoteRegex := regexp.MustCompile(`^(https://|git@)(.*)(:|/)(.*)/(.*(.git)?)$`)
+	groups := gitSSHRemoteRegex.FindStringSubmatch(remote)
+
+	out := fmt.Sprintf("https://%s/%s/%s", groups[2], groups[4], groups[5])
+
+	return out
+}

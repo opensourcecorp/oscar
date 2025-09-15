@@ -1,5 +1,0 @@
----
-formatter:
-  type: "basic"
-  line_ending: "lf"
-  include_document_start: true

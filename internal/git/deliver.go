@@ -6,7 +6,7 @@ import (
 
 	"github.com/opensourcecorp/oscar/internal/oscarcfg"
 	iprint "github.com/opensourcecorp/oscar/internal/print"
-	"github.com/opensourcecorp/oscar/internal/tools"
+	taskutil "github.com/opensourcecorp/oscar/internal/tasks/util"
 )
 
 // Delivery defines metadata & behavior for Delivery tasks.
@@ -19,12 +19,12 @@ type Delivery struct {
 
 // NewForDelivery returns Git information for Delivery tasks.
 func NewForDelivery(ctx context.Context) (*Delivery, error) {
-	root, err := tools.RunCommand(ctx, []string{"git", "rev-parse", "--show-toplevel"})
+	root, err := taskutil.RunCommand(ctx, []string{"git", "rev-parse", "--show-toplevel"})
 	if err != nil {
 		return nil, err
 	}
 
-	latestTag, err := tools.RunCommand(ctx, []string{"bash", "-c", "git tag --list | tail -n1"})
+	latestTag, err := taskutil.RunCommand(ctx, []string{"bash", "-c", "git tag --list | tail -n1"})
 	if err != nil {
 		return nil, err
 	}

@@ -1,19 +1,28 @@
+[settings]
+experimental = true
+
 [tools]
 github-cli = "prefix:2"
 go = "prefix:1"
+hadolint = "prefix:2"
 markdownlint-cli2 = "prefix:0.18"
 # required for markdownlint-cli2
 node = "prefix:24"
 ripgrep = "prefix:14"
 shellcheck = "prefix:0.11"
 shfmt = "prefix:3"
+terraform = "prefix:1.13"
 uv = "prefix:0.8"
 yamlfmt = "prefix:0.17"
 yamllint = "prefix:1"
 
-# Go tools
-"go:honnef.co/go/tools/cmd/staticcheck" = { version = "latest" }
-"go:github.com/mgechev/revive" = { version = "prefix:1" }
-"go:github.com/kisielk/errcheck" = { version = "prefix:1" }
+# Go-specific tools
+"go:github.com/kisielk/errcheck" = { version = "prefix:v1" }
+"go:github.com/mgechev/revive" = { version = "prefix:v1" }
 "go:golang.org/x/tools/cmd/goimports" = { version = "latest" }
-"go:golang.org/x/vuln/cmd/govulncheck" = { version = "prefix:1" }
+"go:golang.org/x/vuln/cmd/govulncheck" = { version = "prefix:v1" }
+"go:honnef.co/go/tools/cmd/staticcheck" = { version = "latest" }
+
+# Python-specific tools. Note that others that may also be CLI tools, may be run internally via
+# `uvx` instead.
+ruff = "prefix:0.13"

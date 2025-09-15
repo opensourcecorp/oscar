@@ -1,0 +1,8 @@
+---
+
+# Rules found at: <https://github.com/google/yamlfmt/blob/main/docs/config-file.md#configuration-1>
+
+formatter:
+  type: "basic"
+  line_ending: "lf"
+  include_document_start: true

@@ -1,5 +1,6 @@
 ---
 extends: "default"
+# Rules found at: https://yamllint.readthedocs.io/en/stable/rules.html
 rules:
   line-length:
     max: 100
