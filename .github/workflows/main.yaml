@@ -25,12 +25,11 @@ jobs:
       - name: Set up mise
         uses: jdx/mise-action@5ac50f778e26fac95da98d50503682459e86d566 # release v3.2.0
         with:
-          version: "2025.8.1"
+          version: "2025.9.10"
           install: true # runs `mise install`
           cache: true
       - name: Run CI
         run: make ci
-
 # - name: Set up Docker Buildx
 #   uses: docker/setup-buildx-action@v2
 
