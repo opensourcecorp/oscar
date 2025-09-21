@@ -47,9 +47,9 @@ message ContainerImage {
   //
   // Example: "opensourcecorp"
   string owner = 2 [(buf.validate.field).required = true];
-  // The target OCI repository. May contain as many subpaths to the actual image artifact as
+  // The target OCI image name. May contain as many subpaths to the actual image artifact as
   // necessary based on the registry, e.g. "my-repo/my-image-group/my-image".
   //
   // Example: "oscar"
-  string repo = 3 [(buf.validate.field).required = true];
+  string name = 3 [(buf.validate.field).required = true];
 }

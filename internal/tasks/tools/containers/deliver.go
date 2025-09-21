@@ -92,13 +92,14 @@ func (t imageBuildPush) Exec(ctx context.Context) error {
 	}
 
 	// GROSS, DUDE
-	composeFile["services"].(map[string]any)[cfg.Repo].(map[string]any)["image"] = uri
-	composeFile["services"].(map[string]any)[cfg.Repo].(map[string]any)["build"].(map[string]any)["context"] = curDir
+	composeFile["services"].(map[string]any)[cfg.GetName()].(map[string]any)["image"] = uri
+	composeFile["services"].(map[string]any)[cfg.GetName()].(map[string]any)["build"].(map[string]any)["context"] = curDir
 
 	composeOut, err := yaml.Marshal(composeFile)
 	if err != nil {
 		return err
 	}
+	iprint.Debugf("edited Compose file YAML: %s\n", string(composeOut))
 
 	workDir := filepath.Join(os.TempDir(), "oscar-oci")
 	if err := os.MkdirAll(workDir, 0755); err != nil {
@@ -110,7 +111,7 @@ func (t imageBuildPush) Exec(ctx context.Context) error {
 		return err
 	}
 
-	registryMap := newRegistryMap(cfg.Repo)
+	registryMap := newRegistryMap(cfg.GetName())
 
 	var authArgs []string
 	if strings.Contains(cfg.Registry, "ghcr") {
@@ -123,7 +124,7 @@ func (t imageBuildPush) Exec(ctx context.Context) error {
 
 	buildPushArgs := []string{"bash", "-c", fmt.Sprintf(`
 		docker compose --file %s build --push %s
-		`, outPath, cfg.Repo,
+		`, outPath, cfg.GetName(),
 	)}
 	if _, err := taskutil.RunCommand(ctx, buildPushArgs); err != nil {
 		return err
@@ -153,8 +154,9 @@ func constructImageURI(ctx context.Context, rootCfg *oscarcfgpbv1.Config) (strin
 
 	uri := fmt.Sprintf(
 		"%s/%s/%s:%s",
-		cfg.GetRegistry(), cfg.GetOwner(), cfg.GetRepo(), tag,
+		cfg.GetRegistry(), cfg.GetOwner(), cfg.GetName(), tag,
 	)
+	iprint.Debugf("image URI: %s\n", uri)
 
 	return uri, nil
 }

@@ -206,11 +206,11 @@ type ContainerImage struct {
 	//
 	// Example: "opensourcecorp"
 	Owner string `protobuf:"bytes,2,opt,name=owner,proto3" json:"owner,omitempty"`
-	// The target OCI repository. May contain as many subpaths to the actual image artifact as
+	// The target OCI image name. May contain as many subpaths to the actual image artifact as
 	// necessary based on the registry, e.g. "my-repo/my-image-group/my-image".
 	//
 	// Example: "oscar"
-	Repo          string `protobuf:"bytes,3,opt,name=repo,proto3" json:"repo,omitempty"`
+	Name          string `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -259,9 +259,9 @@ func (x *ContainerImage) GetOwner() string {
 	return ""
 }
 
-func (x *ContainerImage) GetRepo() string {
+func (x *ContainerImage) GetName() string {
 	if x != nil {
-		return x.Repo
+		return x.Name
 	}
 	return ""
 }
@@ -283,7 +283,7 @@ const file_opensourcecorp_oscar_config_v1_config_proto_rawDesc = "" +
 	"\x0eContainerImage\x12\"\n" +
 	"\bregistry\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\bregistry\x12\x1c\n" +
 	"\x05owner\x18\x02 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x05owner\x12\x1a\n" +
-	"\x04repo\x18\x03 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x04repoB`Z^github.com/opensourcecorp/oscar/internal/generated/opensourcecorp/oscar/config/v1;oscarcfgpbv1b\x06proto3"
+	"\x04name\x18\x03 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x04nameB`Z^github.com/opensourcecorp/oscar/internal/generated/opensourcecorp/oscar/config/v1;oscarcfgpbv1b\x06proto3"
 
 var (
 	file_opensourcecorp_oscar_config_v1_config_proto_rawDescOnce sync.Once

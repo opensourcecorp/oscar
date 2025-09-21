@@ -8,4 +8,4 @@ deliverables:
   container_image:
     registry: "ghcr.io"
     owner: "opensourcecorp"
-    repo: "oscar"
+    name: "oscar"
