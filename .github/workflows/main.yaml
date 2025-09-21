@@ -15,7 +15,6 @@ env:
   GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
   GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
   MISE_GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-  MAIN_REF: "refs/heads/main"
 
 jobs:
   ci:
@@ -48,7 +47,7 @@ jobs:
       - name: "Run CI Tasks"
         run: "make ci"
   deliver:
-    if: "github.ref == '${{ env.MAIN_REF }}'"
+    if: "github.ref == 'refs/heads/main'"
     runs-on: "ubuntu-latest"
     permissions:
       contents: "write"
