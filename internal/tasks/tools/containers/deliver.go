@@ -19,15 +19,18 @@ type (
 	imageBuildPush struct{ taskutil.Tool }
 )
 
+// registryMapping contains substructs to be used based on the target OCI registry.
 type registryMapping struct {
-	Name   string
 	GitHub gitHubRegistry
 }
 
+// gitHubRegistry provides fields for use in targeting "ghcr.io".
 type gitHubRegistry struct {
+	// The command to run to authenticate to the registry.
 	AuthCommand []string
 }
 
+// newRegistryMap returns a populated [registryMapping].
 func newRegistryMap(username string) registryMapping {
 	return registryMapping{
 		GitHub: gitHubRegistry{
@@ -136,7 +139,7 @@ func (t imageBuildPush) Exec(ctx context.Context) error {
 // Post implements [taskutil.Tasker.Post].
 func (t imageBuildPush) Post(_ context.Context) error { return nil }
 
-// TODO
+// constructImageURI constructs an image URI based on data from oscar's config & Git.
 func constructImageURI(ctx context.Context, rootCfg *oscarcfgpbv1.Config) (string, error) {
 	cfg := rootCfg.GetDeliverables().GetContainerImage()
 	git, err := igit.New(ctx)

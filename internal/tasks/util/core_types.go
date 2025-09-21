@@ -24,7 +24,7 @@ type Tasker interface {
 // represent a task that runs "go test", but you *would* need a tool to represent a task that runs
 // the external "staticcheck" linter for Go.
 type Tool struct {
-	// TODO
+	// The list of command & arguments to run during [Tasker.Exec].
 	RunArgs []string
 	// The path to the tool's config file, if it has one to use.
 	ConfigFilePath string

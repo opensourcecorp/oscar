@@ -26,7 +26,6 @@ yamllint = "1.37.1"
 "go:golang.org/x/tools/cmd/goimports" = { version = "0.37.0" }
 "go:golang.org/x/vuln/cmd/govulncheck" = { version = "1.1.4" }
 "go:google.golang.org/protobuf/cmd/protoc-gen-go" = { version = "1.36.8" }
-# gets mad about Go toolchain versions if not "latest"
 "go:honnef.co/go/tools/cmd/staticcheck" = { version = "2025.1.1" }
 
 ### Python-specific tools. Note that others that may also be CLI tools, may be run internally via

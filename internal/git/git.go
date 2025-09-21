@@ -13,16 +13,23 @@ import (
 
 // Git holds metadata about the current state of the Git repository.
 type Git struct {
-	Root         string
-	Branch       string
-	LatestTag    string
+	// The root directory of the repository on the host.
+	Root string
+	// The current branch name.
+	Branch string
+	// The latest tag available in the repo.
+	LatestTag string
+	// The latest commit on the current branch.
 	LatestCommit string
-	IsDirty      bool
+	// Whether or not the working directory has uncommitted changes.
+	IsDirty bool
 }
 
 // Status holds various pieces of information about Git status.
 type Status struct {
-	Diff           []string
+	// The list of modified files.
+	Diff []string
+	// The list of untracked files.
 	UntrackedFiles []string
 }
 

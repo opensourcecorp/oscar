@@ -88,6 +88,8 @@ func (t ghRelease) Exec(ctx context.Context) error {
 // Post implements [taskutil.Tasker.Post].
 func (t ghRelease) Post(_ context.Context) error { return nil }
 
+// goBuild cross-compiles the provided source package and places the resulting artifacts in a
+// root-level "build/" subdirectory.
 func goBuild(ctx context.Context, src string) error {
 	if strings.HasSuffix(src, ".go") {
 		return fmt.Errorf("provided Go build source '%s' was a file, but must be a path to a package", src)

@@ -7,6 +7,7 @@ plugins:
     out: "../internal/generated"
     opt:
       - "paths=source_relative"
+    # TODO: implement
     # # ../proto/generate.go
     # - local: "../build/protoc-gen-oscarcfg"
     #   out: "../internal/generated"

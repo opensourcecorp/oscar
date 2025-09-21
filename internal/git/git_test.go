@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestBranchForURI(t *testing.T) {
+func TestSanitizedBranch(t *testing.T) {
 	want := "feature-wip"
 
 	tt := []struct {

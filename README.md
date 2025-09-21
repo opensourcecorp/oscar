@@ -97,6 +97,7 @@ wheel-reinvention.
   * Also have it dump its own `mise.toml` for the user
   * `self-update` subcommand
 * CI additions
+  * Protobuf (especially since there's proto code in this repo now)
   * Terraform
 * CD additions
   * Publishing to ghcr is confirmed to be working when run on `main` branch
