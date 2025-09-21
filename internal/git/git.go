@@ -10,6 +10,7 @@ import (
 	taskutil "github.com/opensourcecorp/oscar/internal/tasks/util"
 )
 
+// Git holds metadata about the current state of the Git repository.
 type Git struct {
 	Root         string
 	Branch       string
@@ -24,6 +25,7 @@ type Status struct {
 	UntrackedFiles []string
 }
 
+// New returns a populated [Git].
 func New(ctx context.Context) (*Git, error) {
 	root, err := taskutil.RunCommand(ctx, []string{"git", "rev-parse", "--show-toplevel"})
 	if err != nil {
@@ -71,6 +73,8 @@ func New(ctx context.Context) (*Git, error) {
 	return &out, nil
 }
 
+// SanitizedBranch returns the current branch name, sanitized for various systems that allow for a
+// smaller charset (e.g. container image tags).
 func (g *Git) SanitizedBranch() string {
 	return regexp.MustCompile(`[_/]`).ReplaceAllString(g.Branch, "-")
 }

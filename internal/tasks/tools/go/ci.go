@@ -38,6 +38,11 @@ func NewTasksForCI(repo taskutil.Repo) []taskutil.Tasker {
 					RunArgs: []string{"go", "fmt", "./..."},
 				},
 			},
+			goImports{
+				Tool: taskutil.Tool{
+					RunArgs: []string{"goimports", "-l", "-w", "."},
+				},
+			},
 			generateCodeCI{
 				Tool: taskutil.Tool{
 					RunArgs: []string{"go", "generate", "./..."},
@@ -72,11 +77,6 @@ func NewTasksForCI(repo taskutil.Repo) []taskutil.Tasker {
 			errcheck{
 				Tool: taskutil.Tool{
 					RunArgs: []string{"errcheck", "./..."},
-				},
-			},
-			goImports{
-				Tool: taskutil.Tool{
-					RunArgs: []string{"goimports", "-l", "-w", "."},
 				},
 			},
 			govulncheck{
@@ -126,12 +126,43 @@ func (t goFormat) Exec(ctx context.Context) error {
 func (t goFormat) Post(_ context.Context) error { return nil }
 
 // InfoText implements [taskutil.Tasker.InfoText].
+func (t goImports) InfoText() string { return "Format imports" }
+
+// Exec implements [taskutil.Tasker.Exec].
+func (t goImports) Exec(ctx context.Context) error {
+	if _, err := taskutil.RunCommand(ctx, t.RunArgs); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Post implements [taskutil.Tasker.Post].
+func (t goImports) Post(_ context.Context) error { return nil }
+
+// InfoText implements [taskutil.Tasker.InfoText].
 func (t generateCodeCI) InfoText() string { return "Generate code" }
 
 // Exec implements [taskutil.Tasker.Exec].
 func (t generateCodeCI) Exec(ctx context.Context) error {
 	if _, err := taskutil.RunCommand(ctx, t.RunArgs); err != nil {
 		return err
+	}
+
+	// Generating code will likely throw diffs if not also addressing other formatting CI checks, so
+	// run those here again as well.
+	tasks := NewTasksForCI(taskutil.Repo{HasGo: true})
+	for _, task := range tasks {
+		if wantToRun, isOfType := task.(goFormat); isOfType {
+			if err := wantToRun.Exec(ctx); err != nil {
+				return fmt.Errorf("running Go formatter after code generation: %w", err)
+			}
+		}
+		if wantToRun, isOfType := task.(goImports); isOfType {
+			if err := wantToRun.Exec(ctx); err != nil {
+				return fmt.Errorf("running Go formatter after code generation: %w", err)
+			}
+		}
 	}
 
 	return nil
@@ -234,21 +265,6 @@ func (t errcheck) Exec(ctx context.Context) error {
 
 // Post implements [taskutil.Tasker.Post].
 func (t errcheck) Post(_ context.Context) error { return nil }
-
-// InfoText implements [taskutil.Tasker.InfoText].
-func (t goImports) InfoText() string { return "Format imports" }
-
-// Exec implements [taskutil.Tasker.Exec].
-func (t goImports) Exec(ctx context.Context) error {
-	if _, err := taskutil.RunCommand(ctx, t.RunArgs); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Post implements [taskutil.Tasker.Post].
-func (t goImports) Post(_ context.Context) error { return nil }
 
 // InfoText implements [taskutil.Tasker.InfoText].
 func (t govulncheck) InfoText() string { return "Vulnerability scan (govulncheck)" }
