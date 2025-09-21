@@ -3,7 +3,7 @@ set -euo pipefail
 shopt -s globstar
 
 _setup() {
-  cp ./internal/ci/configfiles/pyproject.toml .
+  cp ./internal/tasks/tools/toolcfg/pyproject.toml .
   mkdir -p ./src
   cp -r ./testdata/python/src ./src/test_package
   rename 's/\.test//g' -- ./src/**

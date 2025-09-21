@@ -10,10 +10,12 @@ ARG https_proxy
 
 FROM docker.io/library/golang:${GO_VERSION} AS builder
 
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install --no-install-recommends -y \
         bash \
         ca-certificates \
-        make
+        make \
+        && \
+        rm -rf /var/lib/apt*
 
 COPY . /go/app
 WORKDIR /go/app
@@ -26,14 +28,16 @@ FROM docker.io/library/debian:13-slim AS ci
 
 COPY --from=builder /go/app/build/oscar /oscar
 
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install --no-install-recommends -y \
         bash \
         ca-certificates \
         curl \
         git \
         gnupg2 \
         make \
-        rename
+        rename \
+        && \
+    rm -rf /var/lib/apt/*
 
 COPY . /go/app
 WORKDIR /go/app
@@ -54,13 +58,15 @@ COPY --from=builder /go/app/build/oscar /oscar
 
 # NOTE: Docker BuildKit will skip stages it doesn't see as dependencies, so to enforce the "ci"
 # stage above to run, we need to force a dependency here
-COPY --from=ci /go/app/VERSION /VERSION
+COPY --from=ci /go/app/LICENSE /LICENSE
 
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install --no-install-recommends -y \
         bash \
         ca-certificates \
         git \
-        gnupg2
+        gnupg2 \
+        && \
+    rm -rf /var/lib/apt/*
 
 # NOTE: when creating some shims, mise refers to itself assuming it is on the $PATH, so we need to
 # symlink it out so it can do that
@@ -76,5 +82,8 @@ WORKDIR /home/oscar/app
 VOLUME /home/oscar/app
 # oscar's home directory, for caching on the host
 VOLUME /home/oscar/.oscar
+
+# So e.g. GitHub can tie the image to its source repo
+LABEL org.opencontainers.image.source https://github.com/opensourcecorp/oscar
 
 ENTRYPOINT ["/oscar"]

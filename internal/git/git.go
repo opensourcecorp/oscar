@@ -1,98 +1,113 @@
 package igit
 
 import (
+	"context"
 	"fmt"
-	"os/exec"
+	"reflect"
 	"regexp"
-	"slices"
 	"strings"
 
 	iprint "github.com/opensourcecorp/oscar/internal/print"
+	taskutil "github.com/opensourcecorp/oscar/internal/tasks/util"
 )
 
-// Git defines metadata & behavior for Git interactions.
+// Git holds metadata about the current state of the Git repository.
 type Git struct {
-	// BaselineStatusForCI is used to check against when running CI checks, so that each CI task can
-	// see if it introduced changes.
-	BaselineStatusForCI Status
-	// CurrentStatus is the latest-available Git status, which may differ from the baseline.
-	CurrentStatus Status
+	// The root directory of the repository on the host.
+	Root string
+	// The current branch name.
+	Branch string
+	// The latest tag available in the repo.
+	LatestTag string
+	// The latest commit on the current branch.
+	LatestCommit string
+	// Whether or not the working directory has uncommitted changes.
+	IsDirty bool
 }
 
 // Status holds various pieces of information about Git status.
 type Status struct {
-	Diff           []string
+	// The list of modified files.
+	Diff []string
+	// The list of untracked files.
 	UntrackedFiles []string
 }
 
-// New returns a snapshot of Git information available at call-time.
-func New() (*Git, error) {
-	status, err := getRawStatus()
+// New returns a populated [Git].
+func New(ctx context.Context) (*Git, error) {
+	root, err := taskutil.RunCommand(ctx, []string{"git", "rev-parse", "--show-toplevel"})
 	if err != nil {
 		return nil, err
 	}
+	iprint.Debugf("Git root on host: '%s'\n", root)
 
-	return &Git{
-		BaselineStatusForCI: status,
-	}, nil
-}
-
-// Update recalculates various Git metadata, respecting any existing baseline values set in [New].
-func (g *Git) Update() error {
-	status, err := getRawStatus()
+	branch, err := taskutil.RunCommand(ctx, []string{"git", "rev-parse", "--abbrev-ref", "HEAD"})
 	if err != nil {
-		return fmt.Errorf("getting Git status: %w", err)
+		return nil, err
+	}
+	iprint.Debugf("Git branch: '%s'\n", branch)
+
+	latestTag, err := taskutil.RunCommand(ctx, []string{"bash", "-c", "git tag --list | tail -n1"})
+	if err != nil {
+		return nil, err
+	}
+	iprint.Debugf("latest Git tag: '%s'\n", latestTag)
+
+	latestCommit, err := taskutil.RunCommand(ctx, []string{"git", "rev-parse", "--short=8", "HEAD"})
+	if err != nil {
+		return nil, err
+	}
+	iprint.Debugf("latest Git commit: '%s'\n", latestCommit)
+
+	gitStatus, err := getRawStatus(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("getting Git status: %w", err)
 	}
 
-	untrackedFiles := make([]string, 0)
-	diff := make([]string, 0)
-
-	for _, line := range status.Diff {
-		if !slices.Contains(g.BaselineStatusForCI.Diff, line) {
-			filename := regexp.MustCompile(`^ [A-Z] `).ReplaceAllString(line, "")
-			diff = append(diff, filename)
-		}
+	var isDirty bool
+	if len(gitStatus.Diff) > 0 || len(gitStatus.UntrackedFiles) > 0 {
+		isDirty = true
 	}
 
-	for _, line := range status.UntrackedFiles {
-		if !slices.Contains(g.BaselineStatusForCI.UntrackedFiles, line) {
-			filename := strings.ReplaceAll(line, "?? ", "")
-			untrackedFiles = append(diff, filename)
-		}
+	out := Git{
+		Root:         root,
+		Branch:       branch,
+		LatestTag:    latestTag,
+		LatestCommit: latestCommit,
+		IsDirty:      isDirty,
 	}
+	iprint.Debugf("Git: %+v\n", out)
 
-	g.CurrentStatus = Status{
-		Diff:           diff,
-		UntrackedFiles: untrackedFiles,
-	}
-
-	return nil
+	return &out, nil
 }
 
-// StatusHasChanged informs the caller of whether or not the [Status] now differs from the baseline.
-func (g *Git) StatusHasChanged() (bool, error) {
-	if err := g.updateStatus(); err != nil {
-		return false, err
+// SanitizedBranch returns the current branch name, sanitized for various systems that allow for a
+// smaller charset (e.g. container image tags).
+func (g *Git) SanitizedBranch() string {
+	return regexp.MustCompile(`[_/]`).ReplaceAllString(g.Branch, "-")
+}
+
+// String implements [fmt.Stringer].
+func (g *Git) String() string {
+	out := "Current Git information:\n"
+
+	t := reflect.TypeOf(*g)
+	v := reflect.ValueOf(*g)
+	for i := range v.NumField() {
+		field := t.Field(i)
+		value := v.Field(i)
+		out += fmt.Sprintf("- %s: %v\n", field.Name, value)
 	}
 
-	iprint.Debugf("len(g.CurrentStatus.Diff) = %d\n", len(g.CurrentStatus.Diff))
-	iprint.Debugf("len(g.BaselineStatusForCI.Diff) = %d\n", len(g.BaselineStatusForCI.Diff))
-	iprint.Debugf("len(g.CurrentStatus.UntrackedFiles) = %d\n", len(g.CurrentStatus.UntrackedFiles))
-	iprint.Debugf("len(g.BaselineStatusForCI.UntrackedFiles) = %d\n", len(g.BaselineStatusForCI.UntrackedFiles))
+	out += "\n"
 
-	statusChanged := (len(g.CurrentStatus.Diff)+len(g.BaselineStatusForCI.Diff)) != len(g.BaselineStatusForCI.Diff) ||
-		(len(g.CurrentStatus.UntrackedFiles)+len(g.BaselineStatusForCI.UntrackedFiles)) != len(g.BaselineStatusForCI.UntrackedFiles)
-
-	iprint.Debugf("statusChanged: %v\n", statusChanged)
-
-	return statusChanged, nil
+	return out
 }
 
 // getRawStatus returns a slightly-modified "git status" output, so that calling tools can parse it
 // more easily.
-func getRawStatus() (Status, error) {
-	cmd := exec.Command("git", "status", "--porcelain")
-	outputBytes, err := cmd.CombinedOutput()
+func getRawStatus(ctx context.Context) (Status, error) {
+	outputBytes, err := taskutil.RunCommand(ctx, []string{"git", "status", "--porcelain"})
 	if err != nil {
 		return Status{}, fmt.Errorf("getting git status output: %w", err)
 	}
@@ -119,43 +134,4 @@ func getRawStatus() (Status, error) {
 		Diff:           diff,
 		UntrackedFiles: untrackedFiles,
 	}, nil
-}
-
-// updateStatus updates the tracked Git status so that it can be compared against the baseline.
-func (g *Git) updateStatus() error {
-	// So any future debug logs have a line break in them
-	iprint.Debugf("\n")
-
-	iprint.Debugf("OLD git: %+v\n", g)
-
-	status, err := getRawStatus()
-	if err != nil {
-		return fmt.Errorf("getting Git status: %w", err)
-	}
-
-	diff := make([]string, 0)
-	untrackedFiles := make([]string, 0)
-
-	for _, line := range status.Diff {
-		filename := regexp.MustCompile(`^( +)?[A-Z]+ +`).ReplaceAllString(line, "")
-		if !slices.Contains(g.BaselineStatusForCI.Diff, filename) {
-			diff = append(diff, filename)
-		}
-	}
-
-	for _, line := range status.UntrackedFiles {
-		filename := strings.ReplaceAll(line, "?? ", "")
-		if !slices.Contains(g.BaselineStatusForCI.UntrackedFiles, filename) {
-			untrackedFiles = append(diff, filename)
-		}
-	}
-
-	g.CurrentStatus = Status{
-		Diff:           diff,
-		UntrackedFiles: untrackedFiles,
-	}
-
-	iprint.Debugf("NEW git: %+v\n", g)
-
-	return nil
 }

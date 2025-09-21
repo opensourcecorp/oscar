@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package opensourcecorp.oscar.config.v1;
+
+import "buf/validate/validate.proto";
+
+option go_package = "github.com/opensourcecorp/oscar/internal/generated/opensourcecorp/oscar/config/v1;oscarcfgpbv1";
+
+// Config defines the top-level structure of oscar's config file.
+message Config {
+  // Version is the version string for the codebase. Must be a valid Semantic Version string.
+  //
+  // Example: "1.0.0"
+  string version = 1 [(buf.validate.field).string.pattern = "^[0-9]+\\.[0-9]+\\.[0-9]+(-[a-zA-Z0-9]+)?(\\+[a-zA-Z0-9]+)?$"];
+  // Deliverables is the collection of possible deliverable artifacts.
+  Deliverables deliverables = 2;
+}
+
+// Deliverables contains a field for each possible deliverable.
+message Deliverables {
+  // See [GoGitHubRelease].
+  GoGitHubRelease go_github_release = 1;
+  // See [ContainerImage].
+  ContainerImage container_image = 2;
+}
+
+// GoGitHubRelease defines the arguments necessary to create GitHub Releases for Go binaries.
+message GoGitHubRelease {
+  // The filepaths to the "main" packages to be built.
+  //
+  // Example: - "./cmd/oscar"
+  repeated string build_sources = 1 [(buf.validate.field).required = true];
+  // Optionally flags whether the Release should be left in Draft state at create-time. This can
+  // be useful to set if you want to review the Release contents before actually publishing.
+  //
+  // Example: false
+  bool draft = 2;
+}
+
+// ContainerImage defines the arguments necessary to build & push container image artifacts.
+message ContainerImage {
+  // The target registry provider domain.
+  //
+  // Example: "ghcr.io"
+  string registry = 1 [(buf.validate.field).required = true];
+  // The target OCI namespace.
+  //
+  // Example: "opensourcecorp"
+  string namespace = 2 [(buf.validate.field).required = true];
+  // The target OCI image name. May contain as many subpaths to the actual image artifact as
+  // necessary based on the registry, e.g. "my-repo/my-image-group/my-image".
+  //
+  // Example: "oscar"
+  string name = 3 [(buf.validate.field).required = true];
+}

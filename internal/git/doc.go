@@ -1,2 +1,2 @@
-// Package igit defines logic for interacting with Git on the host.
+// Package igit provides interoperability with Git.
 package igit

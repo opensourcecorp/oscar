@@ -1,9 +1,33 @@
+[settings]
+experimental = true
+jobs = 4
+
 [tools]
-bats = "v1.12.0"
-go = "1.25.0"
-markdownlint-cli2 = "v0.18.1"
-# node is required for markdownlint-cli2
-node = "24.7.0"
-shellcheck = "v0.11.0"
-shfmt = "v3.12.0"
-uv = "0.8.14"
+buf = "1.57.2"
+github-cli = "2.79.0"
+go = "1.25.1"
+hadolint = "2.13.1"
+markdownlint-cli2 = "0.18.1"
+# required for markdownlint-cli2
+node = "24.8.0"
+protobuf = "32.1"
+python = "3.13.7"
+ripgrep = "14.1.1"
+shellcheck = "0.11.0"
+shfmt = "3.12.0"
+terraform = "1.13.3"
+uv = "0.8.18"
+yamlfmt = "0.17.2"
+yamllint = "1.37.1"
+
+### Go-specific tools, for oscar or its development
+"go:github.com/kisielk/errcheck" = { version = "1.9.0" }
+"go:github.com/mgechev/revive" = { version = "1.12.0" }
+"go:golang.org/x/tools/cmd/goimports" = { version = "0.37.0" }
+"go:golang.org/x/vuln/cmd/govulncheck" = { version = "1.1.4" }
+"go:google.golang.org/protobuf/cmd/protoc-gen-go" = { version = "1.36.8" }
+"go:honnef.co/go/tools/cmd/staticcheck" = { version = "2025.1.1" }
+
+### Python-specific tools. Note that others that may also be CLI tools, may be run internally via
+### `uvx` instead.
+ruff = "0.13.1"

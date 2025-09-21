@@ -1,0 +1,13 @@
+---
+version: "v2"
+clean: true
+plugins:
+  # google.golang.org/protobuf/cmd/protoc-gen-go
+  - local: "protoc-gen-go"
+    out: "../internal/generated"
+    opt:
+      - "paths=source_relative"
+    # TODO: implement
+    # # ../proto/generate.go
+    # - local: "../build/protoc-gen-oscarcfg"
+    #   out: "../internal/generated"

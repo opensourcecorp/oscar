@@ -1,3 +1,4 @@
+---
 services:
   oscar:
     container_name: "oscar"
@@ -6,12 +7,13 @@ services:
       dockerfile: "./Containerfile"
       args:
         GO_VERSION: "${GO_VERSION:-1.25.0}"
-        MISE_VERSION: "${MISE_VERSION:-v2025.8.21}"
-        http_proxy: "${http_proxy}"
-        https_proxy: "${https_proxy}"
-    image: "ghrc.io/opensourcecorp/oscar:latest"
-    pull_policy: "if_not_present"
-    command: ["ci"]
+        MISE_VERSION: "${MISE_VERSION:-v2025.9.10}"
+        http_proxy: "${http_proxy:-}"
+        https_proxy: "${https_proxy:-}"
+    image: "${IMAGE_URI:-}"
+    pull_policy: "build"
+    command:
+      - "ci"
     environment:
       http_proxy: "${http_proxy}"
       https_proxy: "${https_proxy}"

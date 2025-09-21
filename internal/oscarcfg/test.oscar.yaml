@@ -1,0 +1,11 @@
+---
+version: "1.0.0"
+deliverables:
+  go_github_release:
+    build_sources:
+      - "./cmd/test"
+    draft: false
+  container_image:
+    registry: "ghcr.io"
+    namespace: "opensourcecorp"
+    name: "oscar"
