@@ -7,5 +7,5 @@ deliverables:
     draft: false
   container_image:
     registry: "ghcr.io"
-    owner: "opensourcecorp"
+    namespace: "opensourcecorp"
     name: "oscar"

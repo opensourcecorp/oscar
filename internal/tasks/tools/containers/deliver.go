@@ -154,7 +154,7 @@ func constructImageURI(ctx context.Context, rootCfg *oscarcfgpbv1.Config) (strin
 
 	uri := fmt.Sprintf(
 		"%s/%s/%s:%s",
-		cfg.GetRegistry(), cfg.GetOwner(), cfg.GetName(), tag,
+		cfg.GetRegistry(), cfg.GetNamespace(), cfg.GetName(), tag,
 	)
 	iprint.Debugf("image URI: %s\n", uri)
 

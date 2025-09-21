@@ -202,10 +202,10 @@ type ContainerImage struct {
 	//
 	// Example: "ghcr.io"
 	Registry string `protobuf:"bytes,1,opt,name=registry,proto3" json:"registry,omitempty"`
-	// The target OCI repository name.
+	// The target OCI namespace.
 	//
 	// Example: "opensourcecorp"
-	Owner string `protobuf:"bytes,2,opt,name=owner,proto3" json:"owner,omitempty"`
+	Namespace string `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
 	// The target OCI image name. May contain as many subpaths to the actual image artifact as
 	// necessary based on the registry, e.g. "my-repo/my-image-group/my-image".
 	//
@@ -252,9 +252,9 @@ func (x *ContainerImage) GetRegistry() string {
 	return ""
 }
 
-func (x *ContainerImage) GetOwner() string {
+func (x *ContainerImage) GetNamespace() string {
 	if x != nil {
-		return x.Owner
+		return x.Namespace
 	}
 	return ""
 }
@@ -279,10 +279,10 @@ const file_opensourcecorp_oscar_config_v1_config_proto_rawDesc = "" +
 	"\x0fcontainer_image\x18\x02 \x01(\v2..opensourcecorp.oscar.config.v1.ContainerImageR\x0econtainerImage\"T\n" +
 	"\x0fGoGitHubRelease\x12+\n" +
 	"\rbuild_sources\x18\x01 \x03(\tB\x06\xbaH\x03\xc8\x01\x01R\fbuildSources\x12\x14\n" +
-	"\x05draft\x18\x02 \x01(\bR\x05draft\"n\n" +
+	"\x05draft\x18\x02 \x01(\bR\x05draft\"v\n" +
 	"\x0eContainerImage\x12\"\n" +
-	"\bregistry\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\bregistry\x12\x1c\n" +
-	"\x05owner\x18\x02 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x05owner\x12\x1a\n" +
+	"\bregistry\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\bregistry\x12$\n" +
+	"\tnamespace\x18\x02 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\tnamespace\x12\x1a\n" +
 	"\x04name\x18\x03 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x04nameB`Z^github.com/opensourcecorp/oscar/internal/generated/opensourcecorp/oscar/config/v1;oscarcfgpbv1b\x06proto3"
 
 var (
