@@ -148,7 +148,13 @@ func constructImageURI(ctx context.Context, rootCfg *oscarcfgpbv1.Config) (strin
 	}
 
 	tag := rootCfg.GetVersion()
-	if git.Branch != "main" {
+
+	if git.Branch == "main" {
+		// NOTE: this might be a risky hack, but because the containerized tests copy other language
+		// files to the root directory and rename them, the git diff will be nonzero, and the tag
+		// value will be impossible to check against. So, override that here.
+		git.IsDirty = false
+	} else {
 		tag = fmt.Sprintf("%s-%s", git.SanitizedBranch(), git.LatestCommit)
 	}
 	if git.IsDirty {
