@@ -11,6 +11,7 @@ markdownlint-cli2 = "0.18.1"
 # required for markdownlint-cli2
 node = "24.8.0"
 protobuf = "32.1"
+python = "3.13.7"
 ripgrep = "14.1.1"
 shellcheck = "0.11.0"
 shfmt = "3.12.0"
