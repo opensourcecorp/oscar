@@ -98,9 +98,5 @@ wheel-reinvention.
   * `self-update` subcommand
 * CI additions
   * Terraform
-  * protobuf
-  * R?
-  * Rust?
 * CD additions
-  * GitHub Releases
-  * Publish to ghcr
+  * Publishing to ghcr is confirmed to be working when run on `main` branch
