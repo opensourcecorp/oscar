@@ -12,6 +12,7 @@ import (
 	iprint "github.com/opensourcecorp/oscar/internal/print"
 	"github.com/opensourcecorp/oscar/internal/tasks/ci"
 	containertools "github.com/opensourcecorp/oscar/internal/tasks/tools/containers"
+	gittagtools "github.com/opensourcecorp/oscar/internal/tasks/tools/gittag"
 	gotools "github.com/opensourcecorp/oscar/internal/tasks/tools/go"
 	taskutil "github.com/opensourcecorp/oscar/internal/tasks/util"
 )
@@ -21,8 +22,10 @@ import (
 func getDeliveryTaskMap(repo taskutil.Repo) (taskutil.TaskMap, error) {
 	out := make(taskutil.TaskMap)
 	for langName, getTasksFunc := range map[string]func(taskutil.Repo) ([]taskutil.Tasker, error){
-		"Go":         gotools.NewTasksForDelivery,
-		"OCI Images": containertools.NewTasksForDelivery,
+		// Independent of Delivery tasks, always push a Git Tag first
+		"0 - Create Git Tag": gittagtools.NewTasksForDelivery,
+		"Go":                 gotools.NewTasksForDelivery,
+		"OCI Images":         containertools.NewTasksForDelivery,
 		// "Python":     pytools.NewTasksForDelivery,
 		// "Terraform":     tftools.NewTasksForDelivery,
 		// "Markdown":      mdtools.NewTasksForDelivery,

@@ -53,7 +53,34 @@ func (t ghRelease) Exec(ctx context.Context) error {
 		return err
 	}
 
-	// TODO: actually write GH Release code
+	buildDir := "build"
+	distDir := "dist"
+
+	if err := os.RemoveAll(distDir); err != nil {
+		return fmt.Errorf("removing dist directory: %w", err)
+	}
+
+	if err := os.MkdirAll(distDir, 0755); err != nil {
+		return fmt.Errorf("creating dist directory: %w", err)
+	}
+
+	if err := os.CopyFS(distDir, os.DirFS(buildDir)); err != nil {
+		return fmt.Errorf("copying build artifacts to %s: %w", distDir, err)
+	}
+
+	draftFlag := ""
+	if cfg.GetDeliverables().GetGoGithubRelease().GetDraft() {
+		draftFlag = "--draft"
+	}
+
+	args := []string{"bash", "-c", fmt.Sprintf(`
+		gh release create v%s %s --generate-notes --verify-tag --latest ./dist/*
+		`, cfg.GetVersion(), draftFlag,
+	)}
+
+	if _, err := taskutil.RunCommand(ctx, args); err != nil {
+		return err
+	}
 
 	return nil
 }
