@@ -58,6 +58,12 @@ func Run(ctx context.Context) (err error) {
 		return fmt.Errorf("internal error setting up run info: %w", err)
 	}
 
+	git, err := igit.New(ctx)
+	if err != nil {
+		return err
+	}
+	fmt.Print(git.String())
+
 	repo, err := taskutil.NewRepo(ctx)
 	if err != nil {
 		return fmt.Errorf("getting repo composition: %w", err)
@@ -70,7 +76,7 @@ func Run(ctx context.Context) (err error) {
 	}
 
 	// For tracking any changes to Git status etc. after each CI Task runs
-	git, err := igit.NewForCI(ctx)
+	gitCI, err := igit.NewForCI(ctx)
 	if err != nil {
 		return fmt.Errorf("internal error: %w", err)
 	}
@@ -89,10 +95,10 @@ func Run(ctx context.Context) (err error) {
 			runErr = errors.Join(runErr, task.Exec(ctx))
 			runErr = errors.Join(runErr, task.Post(ctx))
 
-			if err := git.Update(ctx); err != nil {
+			if err := gitCI.Update(ctx); err != nil {
 				return fmt.Errorf("internal error: %w", err)
 			}
-			gitStatusHasChanged, err := git.StatusHasChanged(ctx)
+			gitStatusHasChanged, err := gitCI.StatusHasChanged(ctx)
 			if err != nil {
 				return fmt.Errorf("internal error: %w", err)
 			}
@@ -106,15 +112,15 @@ func Run(ctx context.Context) (err error) {
 				}
 
 				if gitStatusHasChanged {
-					iprint.Errorf("Files ~CHANGED~ during run: %+v\n", git.CurrentStatus.Diff)
-					iprint.Errorf("Files +CREATED+ during run: %+v\n", git.CurrentStatus.UntrackedFiles)
+					iprint.Errorf("Files ~CHANGED~ during run: %+v\n", gitCI.CurrentStatus.Diff)
+					iprint.Errorf("Files +CREATED+ during run: %+v\n", gitCI.CurrentStatus.UntrackedFiles)
 					iprint.Errorf("\n")
 				}
 
 				run.Failures = append(run.Failures, fmt.Sprintf("%s :: %s", lang, task.InfoText()))
 
 				// Also need to reset the baseline status
-				git, err = igit.NewForCI(ctx)
+				gitCI, err = igit.NewForCI(ctx)
 				if err != nil {
 					return fmt.Errorf("internal error: %w", err)
 				}

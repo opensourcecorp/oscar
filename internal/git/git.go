@@ -3,6 +3,7 @@ package igit
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"regexp"
 	"strings"
 
@@ -77,6 +78,23 @@ func New(ctx context.Context) (*Git, error) {
 // smaller charset (e.g. container image tags).
 func (g *Git) SanitizedBranch() string {
 	return regexp.MustCompile(`[_/]`).ReplaceAllString(g.Branch, "-")
+}
+
+// String implements [fmt.Stringer].
+func (g *Git) String() string {
+	out := "Current Git information:\n"
+
+	t := reflect.TypeOf(*g)
+	v := reflect.ValueOf(*g)
+	for i := range v.NumField() {
+		field := t.Field(i)
+		value := v.Field(i)
+		out += fmt.Sprintf("- %s: %v\n", field.Name, value)
+	}
+
+	out += "\n"
+
+	return out
 }
 
 // getRawStatus returns a slightly-modified "git status" output, so that calling tools can parse it
