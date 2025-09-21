@@ -11,9 +11,6 @@ on:
       - "reopened"
       - "synchronize"
 
-# env:
-#   GITHUB_TOKEN: "{{ github.token }}"
-
 jobs:
   ci:
     runs-on: "ubuntu-latest"
@@ -56,6 +53,8 @@ jobs:
         #         cache: true
         #     - name: "Run Delivery Tasks"
         #       run: "make deliver"
+        #       env:
+        #         GITHUB_TOKEN: "{{ secrets.GITHUB_TOKEN }}"
 
         # - name: Set up Docker Buildx
         #   uses: docker/setup-buildx-action@v2
