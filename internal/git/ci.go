@@ -1,4 +1,4 @@
-package git
+package igit
 
 import (
 	"context"
@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	iprint "github.com/opensourcecorp/oscar/internal/print"
-	taskutil "github.com/opensourcecorp/oscar/internal/tasks/util"
 )
 
 // CI defines metadata & behavior for CI tasks.
@@ -18,12 +17,6 @@ type CI struct {
 	BaselineStatus Status
 	// CurrentStatus is the latest-available Git status, which may differ from the baseline.
 	CurrentStatus Status
-}
-
-// Status holds various pieces of information about Git status.
-type Status struct {
-	Diff           []string
-	UntrackedFiles []string
 }
 
 // NewForCI returns Git information for CI tasks.
@@ -50,7 +43,7 @@ func (g *CI) Update(ctx context.Context) error {
 
 	for _, line := range status.Diff {
 		if !slices.Contains(g.BaselineStatus.Diff, line) {
-			filename := regexp.MustCompile(`^ [A-Z] `).ReplaceAllString(line, "")
+			filename := regexp.MustCompile(`^ ?[A-Z]+ `).ReplaceAllString(line, "")
 			diff = append(diff, filename)
 		}
 	}
@@ -87,38 +80,6 @@ func (g *CI) StatusHasChanged(ctx context.Context) (bool, error) {
 	iprint.Debugf("statusChanged: %v\n", statusChanged)
 
 	return statusChanged, nil
-}
-
-// getRawStatus returns a slightly-modified "git status" output, so that calling tools can parse it
-// more easily.
-func getRawStatus(ctx context.Context) (Status, error) {
-	outputBytes, err := taskutil.RunCommand(ctx, []string{"git", "status", "--porcelain"})
-	if err != nil {
-		return Status{}, fmt.Errorf("getting git status output: %w", err)
-	}
-
-	output := string(outputBytes)
-	outputSplit := strings.Split(output, "\n")
-
-	untrackedFiles := make([]string, 0)
-	diff := make([]string, 0)
-	for _, line := range outputSplit {
-		if line == "" {
-			continue
-		}
-		if strings.HasPrefix(line, "??") {
-			filename := strings.ReplaceAll(line, "?? ", "")
-			untrackedFiles = append(untrackedFiles, filename)
-		} else {
-			filename := regexp.MustCompile(`^( +)?[A-Z]+ +`).ReplaceAllString(line, "")
-			diff = append(diff, filename)
-		}
-	}
-
-	return Status{
-		Diff:           diff,
-		UntrackedFiles: untrackedFiles,
-	}, nil
 }
 
 // updateStatus updates the tracked Git status so that it can be compared against the baseline.

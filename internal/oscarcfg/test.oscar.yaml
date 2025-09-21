@@ -1,10 +1,11 @@
 ---
 version: "1.0.0"
-deliver:
-  go_binaries:
-    - build_source: "./cmd/test"
+deliverables:
   go_github_release:
-    repo: "test"
     build_sources:
       - "./cmd/test"
     draft: false
+  container_image:
+    registry: "ghcr.io"
+    owner: "opensourcecorp"
+    repo: "oscar"

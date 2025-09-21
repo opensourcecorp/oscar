@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	oscarcfgpbv1 "github.com/opensourcecorp/oscar/internal/generated/opensourcecorp/oscar/config/v1"
+	igit "github.com/opensourcecorp/oscar/internal/git"
 	"github.com/opensourcecorp/oscar/internal/oscarcfg"
 	iprint "github.com/opensourcecorp/oscar/internal/print"
 	taskutil "github.com/opensourcecorp/oscar/internal/tasks/util"
@@ -19,14 +21,16 @@ type (
 
 type registryMapping struct {
 	Name   string
-	GitHub struct {
-		AuthCommand []string
-	}
+	GitHub gitHubRegistry
+}
+
+type gitHubRegistry struct {
+	AuthCommand []string
 }
 
 func newRegistryMap(username string) registryMapping {
 	return registryMapping{
-		GitHub: struct{ AuthCommand []string }{
+		GitHub: gitHubRegistry{
 			AuthCommand: []string{"bash", "-c", fmt.Sprintf(`
 				echo ${GITHUB_TOKEN} | docker login ghcr.io --username %s --password-stdin
 				`, username,
@@ -42,10 +46,10 @@ func NewTasksForDelivery(repo taskutil.Repo) ([]taskutil.Tasker, error) {
 		return nil, err
 	}
 
-	if repo.HasContainerfile && cfg.Deliver != nil {
+	if repo.HasContainerfile {
 		out := make([]taskutil.Tasker, 0)
 
-		if cfg.Deliver.ContainerImage != nil {
+		if cfg.GetDeliverables().GetContainerImage() != nil {
 			out = append(out, imageBuildPush{})
 		}
 
@@ -64,7 +68,12 @@ func (t imageBuildPush) Exec(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	cfg := rootCfg.Deliver.ContainerImage
+	cfg := rootCfg.GetDeliverables().GetContainerImage()
+
+	uri, err := constructImageURI(ctx, rootCfg)
+	if err != nil {
+		return fmt.Errorf("constructing image URI: %w", err)
+	}
 
 	composeFileContents, err := os.ReadFile("docker-compose.yaml")
 	if err != nil {
@@ -76,16 +85,6 @@ func (t imageBuildPush) Exec(ctx context.Context) error {
 		return err
 	}
 	iprint.Debugf("composeFile unmarshalled: %#v\n", composeFile)
-
-	// TODO: use a validator package instead, so we can check all the fields more easily
-	if cfg.Repo == "" {
-		return fmt.Errorf("required 'repo' key not set for this Deliverable in oscar.yaml")
-	}
-
-	uri := fmt.Sprintf(
-		"%s/%s/%s:%s",
-		cfg.Registry, cfg.Owner, cfg.Repo, rootCfg.Version,
-	)
 
 	curDir, err := os.Getwd()
 	if err != nil {
@@ -135,3 +134,27 @@ func (t imageBuildPush) Exec(ctx context.Context) error {
 
 // Post implements [taskutil.Tasker.Post].
 func (t imageBuildPush) Post(_ context.Context) error { return nil }
+
+// TODO
+func constructImageURI(ctx context.Context, rootCfg *oscarcfgpbv1.Config) (string, error) {
+	cfg := rootCfg.GetDeliverables().GetContainerImage()
+	git, err := igit.New(ctx)
+	if err != nil {
+		return "", fmt.Errorf("getting Git info: %w", err)
+	}
+
+	tag := rootCfg.GetVersion()
+	if git.Branch != "main" {
+		tag = fmt.Sprintf("%s-%s", git.SanitizedBranch(), git.LatestCommit)
+	}
+	if git.IsDirty {
+		tag = fmt.Sprintf("%s-%s-dirty", git.SanitizedBranch(), git.LatestCommit)
+	}
+
+	uri := fmt.Sprintf(
+		"%s/%s/%s:%s",
+		cfg.GetRegistry(), cfg.GetOwner(), cfg.GetRepo(), tag,
+	)
+
+	return uri, nil
+}

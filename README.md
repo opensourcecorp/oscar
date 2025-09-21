@@ -4,33 +4,18 @@
 ![Github Actions](https://github.com/opensourcecorp/oscar/actions/workflows/main.yaml/badge.svg)
 <!-- badges: end -->
 
-`oscar` ("OpenSourceCorp Automation Runner") is a highly-opinionated, out-of-the-box task runner.
-Originally designed for use exclusively within [OpenSourceCorp's CI/CD
-subsystem](https://github.com/opensourcecorp/osc-infra/tree/main/cicd), it is perfectly usable
-outside of OSC as well.
+`oscar` ("OpenSourceCorp Automation Runner") is a highly-opinionated, out-of-the-box task runner
+designed for use across OSC.
 
-`oscar` is "highly-opinionated" in that `oscar` is designed to do each thing ***one single way***.
-No choosing what linters to run or how to configure them, no picking which annual flavor of Python
-or Nodejs packaging tool, etc. -- `oscar` is built to be ***the*** authoritative toolset for entire
-teams and their codebases.
+`oscar` is "highly-opinionated" in that it is designed to do each thing ***one single way***. No
+choosing what linters to run or how to configure them, no picking which annual flavor of Python or
+Nodejs packaging tool, no discrepancies in how to cut & deploy releases, etc. -- `oscar` is built to
+be ***the*** authoritative toolset for entire teams and their codebases.
 
-Under the hood, `oscar` uses the excellent [`mise`](https://mise.jdx.dev) quite heavily, and would
-like to thank the author & contributors for making something like `oscar` possible without a lot of
-wheel-reinvention.
-
-## How to use
-
-Before getting started, note that `oscar` has a few host-system runtime dependencies. Some of these
-may someday be replaced natively in the future, but some are integral to how `oscar` works
-internally.
-
-* `bash` (version 4.4+)
-* `git`
+## Features
 
 You run oscar by providing it a subcommand, such as `ci`. You can see the full available subcommand
 list via `oscar --help`.
-
-## Features
 
 | Feature                | `oscar` command | Details                            |
 | :--------------------- | :-------------- | :--------------------------------- |
@@ -61,25 +46,50 @@ However, this does not mean that someone is prevented from adding *additional* c
 
 TODO
 
-| Artifact types | Targets         |
-| :------------- | :-------------- |
-| Go binaries    | GitHub Releases |
+| Artifact types   | Targets          | `oscar.yaml` field               |
+| :--------------- | :--------------- | :------------------------------- |
+| Go binaries      | GitHub Releases  | `deliverables.go_github_release` |
+| Container images | Any OCI registry | `deliverables.container_image`   |
 <!-- | <empty cell>   | <second target for same artifact type> | -->
 <!-- | <empty cell>   | <third target for same artifact type> | -->
 <!-- | <second artifact type> | <first target for second artifact type> | -->
 
+## Requirements
+
+Before getting started, note that `oscar` has a few host-system runtime dependencies. Some of these
+may someday be replaced natively in the future, but some are integral to how `oscar` works
+internally.
+
+* `bash` (version 4.4+)
+* GNU `coreutils`
+* `git`
+
+In addition, some components of `oscar` may require additional host-system tools (e.g. a container
+runtime like Docker for building & pushing container images).
+
+If you are running on macOS, you should be able to install any missing tools via `brew install`-ing
+the above by name -- but make sure your `$PATH` is pointing to the correct ones and not the default
+BSD-equivalents.
+
 ## Supported platforms
 
-`oscar` is designed to run on Linux, and should work on macOS as well. Native Windows has not been
-tested, and is unlikely to work. If you are on a Windows machine, you can run `oscar` in a WSL2
+`oscar` is designed to run on Linux, and should mostly work on macOS as well. Native Windows has not
+been tested, and is unlikely to work. If you are on a Windows machine, you can run `oscar` in a WSL2
 environment and it will work the same as on Linux.
 
 ## Development & Contributions
 
 Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for details about developing `oscar`.
 
+## Acknowledgements
+
+Under the hood, `oscar` uses the excellent [`mise`](https://mise.jdx.dev) quite heavily, and would
+like to thank the author & contributors for making something like `oscar` possible without a lot of
+wheel-reinvention.
+
 ## Roadmap
 
+* Add `oscar.yaml` generator
 * Add check for changelog Markdown file that matches `oscar.yaml:version` (we should also use that
   file as the exact GH Release post contents)
 * Workstation setup

@@ -1,8 +1,7 @@
 ---
 version: "0.2.0"
-deliver:
+deliverables:
   go_github_release:
-    repo: "opensourcecorp/oscar"
     build_sources:
       - "./cmd/oscar"
     draft: false

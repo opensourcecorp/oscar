@@ -72,7 +72,7 @@ func maybeSetDebug(cmd *cli.Command) {
 func getVersion() (string, error) {
 	cfg, err := oscarcfg.Get()
 	if err != nil {
-		return "", fmt.Errorf("internal error trying to read oscar config file: %w", err)
+		return "", fmt.Errorf("reading oscar config file: %w", err)
 	}
 
 	return cfg.Version, nil

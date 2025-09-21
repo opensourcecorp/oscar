@@ -1,13 +1,14 @@
 package versiontools
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
 
 func TestCanonicalizeGitRemote(t *testing.T) {
 	remote := "git@github.com:opensourcecorp/oscar.git"
 	want := "https://github.com/opensourcecorp/oscar.git"
 	got := canonicalizeGitRemote(remote)
-
-	if want != got {
-		t.Errorf("\nwant: %v\ngot:  %v", want, got)
-	}
+	assert.Equal(t, want, got)
 }

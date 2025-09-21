@@ -11,7 +11,6 @@ import (
 	"github.com/opensourcecorp/oscar/internal/consts"
 	"github.com/opensourcecorp/oscar/internal/oscarcfg"
 	iprint "github.com/opensourcecorp/oscar/internal/print"
-	"github.com/opensourcecorp/oscar/internal/semver"
 	taskutil "github.com/opensourcecorp/oscar/internal/tasks/util"
 )
 
@@ -33,7 +32,7 @@ func (t versionCI) Exec(ctx context.Context) (err error) {
 	if err != nil {
 		return fmt.Errorf("getting oscar config: %w", err)
 	}
-	version := cfg.Version
+	version := cfg.GetVersion()
 	iprint.Debugf("provided version: %s\n", version)
 
 	// NOTE: we clone the repo in question to a temp location to check the version on
@@ -65,7 +64,7 @@ func (t versionCI) Exec(ctx context.Context) (err error) {
 	if err != nil {
 		return fmt.Errorf("getting oscar config: %w", err)
 	}
-	mainVersion := mainCfg.Version
+	mainVersion := mainCfg.GetVersion()
 	iprint.Debugf("main version: %s\n", version)
 
 	// Need to check if we're already on the main branch, since checking its version against itself
@@ -80,7 +79,7 @@ func (t versionCI) Exec(ctx context.Context) (err error) {
 	iprint.Debugf("current Git branch/ref: %s\n", branch)
 
 	if branch != "main" {
-		if !semver.VersionWasIncremented(version, mainVersion) {
+		if !oscarcfg.VersionHasBeenIncremented(version, mainVersion) {
 			return fmt.Errorf(
 				"version in oscar config on this branch (%s) has not been incremented from the version on the main branch",
 				version,

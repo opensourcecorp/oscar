@@ -22,10 +22,10 @@ func NewTasksForDelivery(repo taskutil.Repo) ([]taskutil.Tasker, error) {
 		return nil, err
 	}
 
-	if repo.HasGo && cfg.Deliver != nil {
+	if repo.HasGo {
 		out := make([]taskutil.Tasker, 0)
 
-		if cfg.Deliver.GoGitHubRelease != nil {
+		if cfg.GetDeliverables().GetGoGithubRelease() != nil {
 			out = append(out, ghRelease{})
 		}
 
@@ -46,7 +46,7 @@ func (t ghRelease) Exec(ctx context.Context) error {
 	}
 
 	var buildErr error
-	for _, src := range cfg.Deliver.GoGitHubRelease.BuildSources {
+	for _, src := range cfg.GetDeliverables().GetGoGithubRelease().GetBuildSources() {
 		buildErr = goBuild(ctx, src)
 	}
 	if buildErr != nil {

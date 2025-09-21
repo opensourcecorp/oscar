@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/opensourcecorp/oscar/internal/consts"
-	"github.com/opensourcecorp/oscar/internal/git"
+	igit "github.com/opensourcecorp/oscar/internal/git"
 	iprint "github.com/opensourcecorp/oscar/internal/print"
 	containertools "github.com/opensourcecorp/oscar/internal/tasks/tools/containers"
 	gotools "github.com/opensourcecorp/oscar/internal/tasks/tools/go"
@@ -70,7 +70,7 @@ func Run(ctx context.Context) (err error) {
 	}
 
 	// For tracking any changes to Git status etc. after each CI Task runs
-	gitCI, err := git.NewForCI(ctx)
+	git, err := igit.NewForCI(ctx)
 	if err != nil {
 		return fmt.Errorf("internal error: %w", err)
 	}
@@ -89,10 +89,10 @@ func Run(ctx context.Context) (err error) {
 			runErr = errors.Join(runErr, task.Exec(ctx))
 			runErr = errors.Join(runErr, task.Post(ctx))
 
-			if err := gitCI.Update(ctx); err != nil {
+			if err := git.Update(ctx); err != nil {
 				return fmt.Errorf("internal error: %w", err)
 			}
-			gitStatusHasChanged, err := gitCI.StatusHasChanged(ctx)
+			gitStatusHasChanged, err := git.StatusHasChanged(ctx)
 			if err != nil {
 				return fmt.Errorf("internal error: %w", err)
 			}
@@ -106,15 +106,15 @@ func Run(ctx context.Context) (err error) {
 				}
 
 				if gitStatusHasChanged {
-					iprint.Errorf("Files ~CHANGED~ during run: %+v\n", gitCI.CurrentStatus.Diff)
-					iprint.Errorf("Files +CREATED+ during run: %+v\n", gitCI.CurrentStatus.UntrackedFiles)
+					iprint.Errorf("Files ~CHANGED~ during run: %+v\n", git.CurrentStatus.Diff)
+					iprint.Errorf("Files +CREATED+ during run: %+v\n", git.CurrentStatus.UntrackedFiles)
 					iprint.Errorf("\n")
 				}
 
 				run.Failures = append(run.Failures, fmt.Sprintf("%s :: %s", lang, task.InfoText()))
 
 				// Also need to reset the baseline status
-				gitCI, err = git.NewForCI(ctx)
+				git, err = igit.NewForCI(ctx)
 				if err != nil {
 					return fmt.Errorf("internal error: %w", err)
 				}

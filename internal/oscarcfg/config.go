@@ -1,55 +1,22 @@
 package oscarcfg
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
+	"buf.build/go/protovalidate"
 	"github.com/opensourcecorp/oscar/internal/consts"
+	oscarcfgpbv1 "github.com/opensourcecorp/oscar/internal/generated/opensourcecorp/oscar/config/v1"
 	iprint "github.com/opensourcecorp/oscar/internal/print"
 	"go.yaml.in/yaml/v4"
+	"golang.org/x/mod/semver"
+	"google.golang.org/protobuf/encoding/protojson"
 )
-
-// Config defines the top-level structure of oscar's config file.
-type Config struct {
-	// Version is the version string for the codebase.
-	Version string `yaml:"version" json:"version"`
-	// Deliver is the collection of possible deliverable artifacts.
-	Deliver *Deliverables `yaml:"deliver" json:"deliver"`
-	// Deploy Deployables  `yaml:"deploy" json:"deploy"`
-}
-
-// Deliverables contains a field for each possible deliverable.
-type Deliverables struct {
-	// See [GoGitHubRelease].
-	GoGitHubRelease *GoGitHubRelease `yaml:"go_github_release" json:"go_github_release"`
-	// See [ContainerImage].
-	ContainerImage *ContainerImage `yaml:"container_image" json:"container_image"`
-}
-
-// GoGitHubRelease defines the arguments necessary to create GitHub Releases for Go binaries.
-type GoGitHubRelease struct {
-	// The target GitHub Repository.
-	Repo string `yaml:"repo" json:"repo"`
-	// The filepaths to the "main" packages to be built.
-	BuildSources []string `yaml:"build_sources" json:"build_sources"`
-	// Flags whether the Release should be left in Draft state at create-time. This can be useful to
-	// set if you want to review the Release contents before actually publishing.
-	Draft bool
-}
-
-// ContainerImage defines the arguments necessary to build & push container image artifacts.
-type ContainerImage struct {
-	// The target registry provider domain, e.g. "ghcr.io".
-	Registry string `yaml:"registry" json:"registry"`
-	// The target OCI repository name, e.g. "oscar".
-	Owner string `yaml:"owner" json:"owner"`
-	// The target OCI repository, e.g. "oscar".
-	Repo string `yaml:"repo" json:"repo"`
-}
 
 // Get returns a populated [Config] based on the oscar config file location. If `path` is not
 // provided, it will default to looking in the calling directory.
-func Get(pathOverride ...string) (Config, error) {
+func Get(pathOverride ...string) (*oscarcfgpbv1.Config, error) {
 	path := consts.DefaultOscarCfgFileName
 
 	// Handle the override so we can test this function, and use it in other ways (like checking the
@@ -58,16 +25,41 @@ func Get(pathOverride ...string) (Config, error) {
 		path = pathOverride[0]
 	}
 
-	data, err := os.ReadFile(path)
+	yamlData, err := os.ReadFile(path)
 	if err != nil {
-		return Config{}, fmt.Errorf("reading oscar config file: %w", err)
+		return nil, fmt.Errorf("reading oscar config file: %w", err)
 	}
-	iprint.Debugf("data read from oscar config file: %s\n", string(data))
+	iprint.Debugf("data read from oscar config file:\n%s\n", string(yamlData))
 
-	var cfg Config
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		return Config{}, fmt.Errorf("unmarshalling oscar config file '%s': %w", path, err)
+	jsonSweepMap := make(map[string]any)
+	if err := yaml.Unmarshal(yamlData, jsonSweepMap); err != nil {
+		panic(err)
+	}
+	iprint.Debugf("YAML data unmarshalled to map: %+v\n", jsonSweepMap)
+
+	jsonData, err := json.Marshal(jsonSweepMap)
+	if err != nil {
+		panic(err)
+	}
+	iprint.Debugf("map data as JSON string: %s\n", string(jsonData))
+
+	var cfg = &oscarcfgpbv1.Config{}
+	if err := protojson.Unmarshal(jsonData, cfg); err != nil {
+		return nil, fmt.Errorf("unmarshalling oscar config file '%s': %w", path, err)
+	}
+	iprint.Debugf("proto message: %+v\n", cfg)
+
+	if err := protovalidate.Validate(cfg); err != nil {
+		return nil, fmt.Errorf("validating oscar config file '%s': %w", path, err)
 	}
 
 	return cfg, nil
+}
+
+// VersionHasBeenIncremented reports whether the newVersion is greater than the oldVersion.
+func VersionHasBeenIncremented(newVersion string, oldVersion string) bool {
+	compValue := semver.Compare("v"+newVersion, "v"+oldVersion)
+	iprint.Debugf("semver comparison value: %d\n", compValue)
+
+	return compValue > 0
 }

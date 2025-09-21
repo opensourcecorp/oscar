@@ -2,28 +2,28 @@ package oscarcfg
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestRead(t *testing.T) {
-	cfg, err := Get("test.oscar.yaml")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+const testConfigFilePath = "test.oscar.yaml"
 
-	t.Logf("parsed cfg: %+v", cfg)
+func TestGet(t *testing.T) {
+	cfg, err := Get(testConfigFilePath)
+	require.NoError(t, err)
+
+	t.Logf("parsed cfg:\n< %+v >", cfg)
 
 	t.Run("version", func(t *testing.T) {
 		want := "1.0.0"
-		if cfg.Version != want {
-			t.Errorf("version: wanted '%s', got '%s'", want, cfg.Version)
-		}
+		assert.Equal(t, want, cfg.GetVersion())
 	})
 
 	t.Run("deliver", func(t *testing.T) {
-		wantGHRelease := "test"
-		gotGHRelease := cfg.Deliver.GoGitHubRelease.Repo
-		if gotGHRelease != wantGHRelease {
-			t.Errorf("GH Release: wanted '%s', got '%s'", wantGHRelease, gotGHRelease)
-		}
+		wantBuildSources := []string{"./cmd/test"}
+		gotBuildSources := cfg.GetDeliverables().GetGoGithubRelease().GetBuildSources()
+
+		assert.Equal(t, wantBuildSources, gotBuildSources)
 	})
 }

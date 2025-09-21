@@ -1,2 +1,2 @@
-// Package git provides interoperability with Git.
-package git
+// Package igit provides interoperability with Git.
+package igit

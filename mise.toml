@@ -3,27 +3,31 @@ experimental = true
 jobs = 4
 
 [tools]
-github-cli = "prefix:2"
-go = "prefix:1"
-hadolint = "prefix:2"
-markdownlint-cli2 = "prefix:0.18"
+buf = "1.57.2"
+github-cli = "2.79.0"
+go = "1.25.1"
+hadolint = "2.13.1"
+markdownlint-cli2 = "0.18.1"
 # required for markdownlint-cli2
-node = "prefix:24"
-ripgrep = "prefix:14"
-shellcheck = "prefix:0.11"
-shfmt = "prefix:3"
-terraform = "prefix:1.13"
-uv = "prefix:0.8"
-yamlfmt = "prefix:0.17"
-yamllint = "prefix:1"
+node = "24.8.0"
+protobuf = "32.1"
+ripgrep = "14.1.1"
+shellcheck = "0.11.0"
+shfmt = "3.12.0"
+terraform = "1.13.3"
+uv = "0.8.18"
+yamlfmt = "0.17.2"
+yamllint = "1.37.1"
 
-# Go-specific tools
-"go:github.com/kisielk/errcheck" = { version = "prefix:v1" }
-"go:github.com/mgechev/revive" = { version = "prefix:v1" }
-"go:golang.org/x/tools/cmd/goimports" = { version = "latest" }
-"go:golang.org/x/vuln/cmd/govulncheck" = { version = "prefix:v1" }
-"go:honnef.co/go/tools/cmd/staticcheck" = { version = "latest" }
+### Go-specific tools, for oscar or its development
+"go:github.com/kisielk/errcheck" = { version = "1.9.0" }
+"go:github.com/mgechev/revive" = { version = "1.12.0" }
+"go:golang.org/x/tools/cmd/goimports" = { version = "0.37.0" }
+"go:golang.org/x/vuln/cmd/govulncheck" = { version = "1.1.4" }
+"go:google.golang.org/protobuf/cmd/protoc-gen-go" = { version = "1.36.8" }
+# gets mad about Go toolchain versions if not "latest"
+"go:honnef.co/go/tools/cmd/staticcheck" = { version = "2025.1.1" }
 
-# Python-specific tools. Note that others that may also be CLI tools, may be run internally via
-# `uvx` instead.
-ruff = "prefix:0.13"
+### Python-specific tools. Note that others that may also be CLI tools, may be run internally via
+### `uvx` instead.
+ruff = "0.13.1"
