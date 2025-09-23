@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/opensourcecorp/oscar/internal/oscarcfg"
+	"github.com/opensourcecorp/oscar/internal/system"
 	taskutil "github.com/opensourcecorp/oscar/internal/tasks/util"
 )
 
@@ -78,7 +79,7 @@ func (t ghRelease) Exec(ctx context.Context) error {
 		`, cfg.GetVersion(), draftFlag,
 	)}
 
-	if _, err := taskutil.RunCommand(ctx, args); err != nil {
+	if _, err := system.RunCommand(ctx, args); err != nil {
 		return err
 	}
 
@@ -120,7 +121,7 @@ func goBuild(ctx context.Context, src string) error {
 		binName := filepath.Base(src)
 		target := filepath.Join(targetDir, fmt.Sprintf("%s-%s-%s", binName, goos, goarch))
 
-		if _, err := taskutil.RunCommand(ctx, []string{"bash", "-c", fmt.Sprintf(`
+		if _, err := system.RunCommand(ctx, []string{"bash", "-c", fmt.Sprintf(`
 			CGO_ENABLED=0 \
 			GOOS=%s GOARCH=%s \
 			go build -ldflags '-extldflags "-static"' -o %s %s`,

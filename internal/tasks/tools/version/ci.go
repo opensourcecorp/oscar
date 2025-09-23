@@ -11,6 +11,7 @@ import (
 	"github.com/opensourcecorp/oscar/internal/consts"
 	"github.com/opensourcecorp/oscar/internal/oscarcfg"
 	iprint "github.com/opensourcecorp/oscar/internal/print"
+	"github.com/opensourcecorp/oscar/internal/system"
 	taskutil "github.com/opensourcecorp/oscar/internal/tasks/util"
 )
 
@@ -49,14 +50,14 @@ func (t versionCI) Exec(ctx context.Context) (err error) {
 		}
 	}()
 
-	remote, err := taskutil.RunCommand(ctx, []string{"git", "remote", "get-url", "origin"})
+	remote, err := system.RunCommand(ctx, []string{"git", "remote", "get-url", "origin"})
 	if err != nil {
 		return fmt.Errorf("determining git root: %w", err)
 	}
 
 	remote = canonicalizeGitRemote(remote)
 
-	if _, err := taskutil.RunCommand(ctx, []string{"git", "clone", "--depth", "1", remote, tmpCloneDir}); err != nil {
+	if _, err := system.RunCommand(ctx, []string{"git", "clone", "--depth", "1", remote, tmpCloneDir}); err != nil {
 		return fmt.Errorf("cloning repo source to temp location: %w", err)
 	}
 
@@ -72,7 +73,7 @@ func (t versionCI) Exec(ctx context.Context) (err error) {
 	//
 	// TODO: update internal git package to have a type with ALL this info so I stop copy-pasting
 	// shell-outs around
-	branch, err := taskutil.RunCommand(ctx, []string{"git", "rev-parse", "--abbrev-ref", "HEAD"})
+	branch, err := system.RunCommand(ctx, []string{"git", "rev-parse", "--abbrev-ref", "HEAD"})
 	if err != nil {
 		return fmt.Errorf("checking current Git branch/ref: %w", err)
 	}

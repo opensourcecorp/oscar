@@ -7,7 +7,9 @@ import (
 	"strings"
 	"time"
 
+	igit "github.com/opensourcecorp/oscar/internal/git"
 	iprint "github.com/opensourcecorp/oscar/internal/print"
+	"github.com/opensourcecorp/oscar/internal/system"
 )
 
 // A Run holds metadata about an instance of an oscar subcommand run, e.g. a list of Tasks for the
@@ -16,6 +18,12 @@ type Run struct {
 	// The "type" of Run as an informative string, i.e. "CI", "Deliver", etc. Used in
 	// banner-printing in [Run.PrintRunTypeBanner].
 	Type string
+	// See [igit.Git].
+	Git *igit.Git
+	// See [Repo].
+	Repo Repo
+	// See [iprint.AllColors].
+	Colors iprint.AllColors
 	// A timestamp for storing when the overall run started.
 	StartTime time.Time
 	// Keeps track of all task failures.
@@ -27,13 +35,30 @@ func NewRun(ctx context.Context, runType string) (Run, error) {
 	// Kind of wonky, but print the banner first
 	Run{Type: runType}.PrintRunTypeBanner()
 
+	colors := iprint.Colors()
+
 	// Handle system init
-	if err := InitSystem(ctx); err != nil {
+	if err := system.Init(ctx); err != nil {
 		return Run{}, fmt.Errorf("initializing system: %w", err)
 	}
 
+	git, err := igit.New(ctx)
+	if err != nil {
+		return Run{}, err
+	}
+	iprint.Infof(colors.Gray + git.String() + colors.Reset)
+
+	repo, err := NewRepo(ctx)
+	if err != nil {
+		return Run{}, fmt.Errorf("getting repo composition: %w", err)
+	}
+	iprint.Infof(colors.Gray + repo.String() + colors.Reset)
+
 	return Run{
 		Type:      runType,
+		Git:       git,
+		Repo:      repo,
+		Colors:    colors,
 		StartTime: time.Now(),
 		Failures:  make([]string, 0),
 	}, nil
@@ -41,31 +66,43 @@ func NewRun(ctx context.Context, runType string) (Run, error) {
 
 // PrintRunTypeBanner prints a banner about the type of [Run] underway.
 func (run Run) PrintRunTypeBanner() {
+	colors := iprint.Colors()
+
 	// this padding accounts for leading text length before the run.Type string
 	padding := 9
 	bannerChar := "#"
-	fmt.Printf("%s\n", strings.Repeat(bannerChar, len(run.Type)+padding))
-	fmt.Printf("%s Run: %s #\n", bannerChar, run.Type)
-	fmt.Printf("%s\n\n", strings.Repeat(bannerChar, len(run.Type)+padding))
+	iprint.Infof(
+		colors.Yellow+"%s\n"+colors.Reset,
+		strings.Repeat(bannerChar, len(run.Type)+padding),
+	)
+	iprint.Infof(
+		colors.Yellow+"%s Run: %s #\n"+colors.Reset,
+		bannerChar, run.Type,
+	)
+	iprint.Infof(
+		colors.Yellow+"%s\n\n"+colors.Reset,
+		strings.Repeat(bannerChar, len(run.Type)+padding),
+	)
 }
 
 // PrintTaskMapBanner prints a banner about the [TaskMap] being run.
 func (run Run) PrintTaskMapBanner(lang string) {
-	fmt.Printf(
-		"=== %s %s>\n",
-		lang, strings.Repeat("=", 64-len(lang)),
-	)
+	iprint.Infof("=== %s %s>\n", lang, strings.Repeat("=", 64-len(lang)))
 }
 
 // PrintTaskBanner prints a banner about the Task being run.
 func (run Run) PrintTaskBanner(task Tasker) {
 	// NOTE: no trailing newline on purpose
-	fmt.Printf("> %s %s............", task.InfoText(), strings.Repeat(".", 32-len(task.InfoText())))
+	iprint.Infof(
+		"> %s %s............",
+		iprint.Colors().White+task.InfoText()+iprint.Colors().InfoColor,
+		strings.Repeat(".", 32-len(task.InfoText())),
+	)
 }
 
 // ReportSuccess prints information about the success of a [Run].
 func (run Run) ReportSuccess() {
-	fmt.Printf("\nAll tasks succeeded! (%s)\n\n", RunDurationString(run.StartTime))
+	iprint.Goodf("\nAll tasks succeeded! (%s)\n\n", iprint.RunDurationString(run.StartTime))
 }
 
 // ReportFailure prints information about the failure of a [Run]. It takes an `error` arg in case
@@ -73,7 +110,7 @@ func (run Run) ReportSuccess() {
 // errors that an outer variable already holds.
 func (run Run) ReportFailure(err error) error {
 	iprint.Errorf("\n%s\n", strings.Repeat("=", 65))
-	iprint.Errorf("The following tasks failed: (%s)\n", RunDurationString(run.StartTime))
+	iprint.Errorf("The following tasks failed: (%s)\n", iprint.RunDurationString(run.StartTime))
 	for _, f := range run.Failures {
 		iprint.Errorf("- %s\n", f)
 	}

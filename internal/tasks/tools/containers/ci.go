@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/opensourcecorp/oscar/internal/system"
 	"github.com/opensourcecorp/oscar/internal/tasks/tools/toolcfg"
 	taskutil "github.com/opensourcecorp/oscar/internal/tasks/util"
 )
@@ -23,7 +24,7 @@ func NewTasksForCI(repo taskutil.Repo) []taskutil.Tasker {
 					RunArgs: []string{"bash", "-c",
 						fmt.Sprintf(
 							`hadolint --config {{ConfigFilePath}} $(%s)`,
-							taskutil.GetFileTypeListerCommand("containerfile"),
+							system.GetFileTypeListerCommand("containerfile"),
 						),
 					},
 					ConfigFilePath: filepath.Join(os.TempDir(), "hadolint.yaml"),
@@ -44,7 +45,7 @@ func (t hadolint) Exec(ctx context.Context) error {
 		return err
 	}
 
-	if _, err := taskutil.RunCommand(ctx, t.RenderRunCommandArgs()); err != nil {
+	if _, err := system.RunCommand(ctx, t.RenderRunCommandArgs()); err != nil {
 		return err
 	}
 

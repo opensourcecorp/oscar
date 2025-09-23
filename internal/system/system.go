@@ -1,4 +1,4 @@
-package taskutil
+package system
 
 import (
 	"context"
@@ -18,9 +18,9 @@ import (
 	iprint "github.com/opensourcecorp/oscar/internal/print"
 )
 
-// InitSystem runs setup & checks against the host itself, so that oscar can run.
-func InitSystem(ctx context.Context) error {
-	fmt.Printf("Initializing the host, this might take some time... ")
+// Init runs setup & checks against the host itself, so that oscar can run.
+func Init(ctx context.Context) error {
+	iprint.Infof("Initializing the host, this might take some time... ")
 	startTime := time.Now()
 
 	requiredSystemCommands := [][]string{
@@ -77,7 +77,10 @@ func InitSystem(ctx context.Context) error {
 		return fmt.Errorf("running mise install: %w", err)
 	}
 
-	fmt.Printf("Done! (%s)\n\n", RunDurationString(startTime))
+	iprint.Infof(
+		iprint.Colors().Green+"Done! (%s)\n\n"+iprint.Colors().Reset,
+		iprint.RunDurationString(startTime),
+	)
 
 	return nil
 }
@@ -108,12 +111,6 @@ func RunCommand(ctx context.Context, cmdArgs []string) (string, error) {
 	}
 
 	return strings.TrimSuffix(string(output), "\n"), nil
-}
-
-// RunDurationString returns a calculated duration used to indicate how long a particular Task (or
-// set of Tasks) took to run.
-func RunDurationString(t time.Time) string {
-	return fmt.Sprintf("t: %s", time.Since(t).Round(time.Second/1000).String())
 }
 
 // GetFileTypeListerCommand takes a [ripgrep]-known file type, and returns a string (to be used as
@@ -214,9 +211,9 @@ func installMise(_ context.Context) (err error) {
 	return err
 }
 
-// filesExistInTree performs file discovery by allowing various tools to check if they need to run
+// FilesExistInTree performs file discovery by allowing various tools to check if they need to run
 // based on file presence.
-func filesExistInTree(ctx context.Context, findScript string) (bool, error) {
+func FilesExistInTree(ctx context.Context, findScript string) (bool, error) {
 	cmd := exec.CommandContext(ctx, "bash", "-c", fmt.Sprintf(`
 		shopt -s globstar
 		%s`,

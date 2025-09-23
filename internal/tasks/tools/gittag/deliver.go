@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/opensourcecorp/oscar/internal/oscarcfg"
+	"github.com/opensourcecorp/oscar/internal/system"
 	taskutil "github.com/opensourcecorp/oscar/internal/tasks/util"
 )
 
@@ -37,7 +38,7 @@ func (t createAndPushTag) Exec(ctx context.Context) error {
 	`, cfg.GetVersion(),
 	)}
 
-	if _, err := taskutil.RunCommand(ctx, args); err != nil {
+	if _, err := system.RunCommand(ctx, args); err != nil {
 		return err
 	}
 

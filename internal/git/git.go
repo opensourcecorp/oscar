@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	iprint "github.com/opensourcecorp/oscar/internal/print"
-	taskutil "github.com/opensourcecorp/oscar/internal/tasks/util"
+	"github.com/opensourcecorp/oscar/internal/system"
 )
 
 // Git holds metadata about the current state of the Git repository.
@@ -35,25 +35,25 @@ type Status struct {
 
 // New returns a populated [Git].
 func New(ctx context.Context) (*Git, error) {
-	root, err := taskutil.RunCommand(ctx, []string{"git", "rev-parse", "--show-toplevel"})
+	root, err := system.RunCommand(ctx, []string{"git", "rev-parse", "--show-toplevel"})
 	if err != nil {
 		return nil, err
 	}
 	iprint.Debugf("Git root on host: '%s'\n", root)
 
-	branch, err := taskutil.RunCommand(ctx, []string{"git", "rev-parse", "--abbrev-ref", "HEAD"})
+	branch, err := system.RunCommand(ctx, []string{"git", "rev-parse", "--abbrev-ref", "HEAD"})
 	if err != nil {
 		return nil, err
 	}
 	iprint.Debugf("Git branch: '%s'\n", branch)
 
-	latestTag, err := taskutil.RunCommand(ctx, []string{"bash", "-c", "git tag --list | tail -n1"})
+	latestTag, err := system.RunCommand(ctx, []string{"bash", "-c", "git tag --list | tail -n1"})
 	if err != nil {
 		return nil, err
 	}
 	iprint.Debugf("latest Git tag: '%s'\n", latestTag)
 
-	latestCommit, err := taskutil.RunCommand(ctx, []string{"git", "rev-parse", "--short=8", "HEAD"})
+	latestCommit, err := system.RunCommand(ctx, []string{"git", "rev-parse", "--short=8", "HEAD"})
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +107,7 @@ func (g *Git) String() string {
 // getRawStatus returns a slightly-modified "git status" output, so that calling tools can parse it
 // more easily.
 func getRawStatus(ctx context.Context) (Status, error) {
-	outputBytes, err := taskutil.RunCommand(ctx, []string{"git", "status", "--porcelain"})
+	outputBytes, err := system.RunCommand(ctx, []string{"git", "status", "--porcelain"})
 	if err != nil {
 		return Status{}, fmt.Errorf("getting git status output: %w", err)
 	}

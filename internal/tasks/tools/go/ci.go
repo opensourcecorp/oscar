@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/opensourcecorp/oscar/internal/system"
 	"github.com/opensourcecorp/oscar/internal/tasks/tools/toolcfg"
 	taskutil "github.com/opensourcecorp/oscar/internal/tasks/util"
 )
@@ -100,7 +101,7 @@ func (t goModCheck) InfoText() string { return "go.mod tidy check" }
 
 // Exec implements [taskutil.Tasker.Exec].
 func (t goModCheck) Exec(ctx context.Context) error {
-	if _, err := taskutil.RunCommand(ctx, t.RunArgs); err != nil {
+	if _, err := system.RunCommand(ctx, t.RunArgs); err != nil {
 		return err
 	}
 
@@ -115,7 +116,7 @@ func (t goFormat) InfoText() string { return "Format" }
 
 // Exec implements [taskutil.Tasker.Exec].
 func (t goFormat) Exec(ctx context.Context) error {
-	if _, err := taskutil.RunCommand(ctx, t.RunArgs); err != nil {
+	if _, err := system.RunCommand(ctx, t.RunArgs); err != nil {
 		return err
 	}
 
@@ -130,7 +131,7 @@ func (t goImports) InfoText() string { return "Format imports" }
 
 // Exec implements [taskutil.Tasker.Exec].
 func (t goImports) Exec(ctx context.Context) error {
-	if _, err := taskutil.RunCommand(ctx, t.RunArgs); err != nil {
+	if _, err := system.RunCommand(ctx, t.RunArgs); err != nil {
 		return err
 	}
 
@@ -145,7 +146,7 @@ func (t generateCodeCI) InfoText() string { return "Generate code" }
 
 // Exec implements [taskutil.Tasker.Exec].
 func (t generateCodeCI) Exec(ctx context.Context) error {
-	if _, err := taskutil.RunCommand(ctx, t.RunArgs); err != nil {
+	if _, err := system.RunCommand(ctx, t.RunArgs); err != nil {
 		return err
 	}
 
@@ -176,7 +177,7 @@ func (t goBuildCI) InfoText() string { return "Build" }
 
 // Exec implements [taskutil.Tasker.Exec].
 func (t goBuildCI) Exec(ctx context.Context) error {
-	if _, err := taskutil.RunCommand(ctx, t.RunArgs); err != nil {
+	if _, err := system.RunCommand(ctx, t.RunArgs); err != nil {
 		return err
 	}
 
@@ -191,7 +192,7 @@ func (t goVet) InfoText() string { return "Vet" }
 
 // Exec implements [taskutil.Tasker.Exec].
 func (t goVet) Exec(ctx context.Context) error {
-	if _, err := taskutil.RunCommand(ctx, t.RunArgs); err != nil {
+	if _, err := system.RunCommand(ctx, t.RunArgs); err != nil {
 		return err
 	}
 
@@ -210,7 +211,7 @@ func (t staticcheck) Exec(ctx context.Context) error {
 		return err
 	}
 
-	if _, err := taskutil.RunCommand(ctx, t.RunArgs); err != nil {
+	if _, err := system.RunCommand(ctx, t.RunArgs); err != nil {
 		return err
 	}
 
@@ -235,7 +236,7 @@ func (t revive) Exec(ctx context.Context) error {
 		return err
 	}
 
-	if _, err := taskutil.RunCommand(ctx, t.RenderRunCommandArgs()); err != nil {
+	if _, err := system.RunCommand(ctx, t.RenderRunCommandArgs()); err != nil {
 		return err
 	}
 
@@ -256,7 +257,7 @@ func (t errcheck) InfoText() string { return "Lint (errcheck)" }
 
 // Exec implements [taskutil.Tasker.Exec].
 func (t errcheck) Exec(ctx context.Context) error {
-	if _, err := taskutil.RunCommand(ctx, t.RunArgs); err != nil {
+	if _, err := system.RunCommand(ctx, t.RunArgs); err != nil {
 		return err
 	}
 
@@ -271,7 +272,7 @@ func (t govulncheck) InfoText() string { return "Vulnerability scan (govulncheck
 
 // Exec implements [taskutil.Tasker.Exec].
 func (t govulncheck) Exec(ctx context.Context) error {
-	if _, err := taskutil.RunCommand(ctx, t.RunArgs); err != nil {
+	if _, err := system.RunCommand(ctx, t.RunArgs); err != nil {
 		return err
 	}
 
@@ -286,7 +287,7 @@ func (t goTest) InfoText() string { return "Tests" }
 
 // Exec implements [taskutil.Tasker.Exec].
 func (t goTest) Exec(ctx context.Context) error {
-	if _, err := taskutil.RunCommand(ctx, t.RunArgs); err != nil {
+	if _, err := system.RunCommand(ctx, t.RunArgs); err != nil {
 		return err
 	}
 

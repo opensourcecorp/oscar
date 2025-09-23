@@ -8,8 +8,14 @@ import (
 )
 
 const (
-	// DebugEnvVarName is for enabling debug logs etc.
-	DebugEnvVarName = "OSC_DEBUG"
+	// OscarEnvVarDebug is for enabling debug logs etc.
+	OscarEnvVarDebug = "OSC_DEBUG"
+
+	// OscarEnvVarNoBanner is used to suppress printing the stylistic banner at startup.
+	OscarEnvVarNoBanner = "OSCAR_NO_BANNER"
+
+	// OscarEnvVarNoColor is used to suppress printing colored terminal output.
+	OscarEnvVarNoColor = "OSCAR_NO_COLOR"
 
 	// MiseVersion is the default version of mise to install if not present. Can be overridden via
 	// the `MISE_VERSION` env var, which is checked elsewhere.

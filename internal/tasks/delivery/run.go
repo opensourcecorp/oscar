@@ -68,13 +68,13 @@ func Run(ctx context.Context) (err error) {
 	if err != nil {
 		return err
 	}
-	fmt.Print(git.String())
+	iprint.Infof(run.Colors.Gray + git.String() + run.Colors.Reset)
 
 	repo, err := taskutil.NewRepo(ctx)
 	if err != nil {
 		return fmt.Errorf("getting repo composition: %w", err)
 	}
-	fmt.Print(repo.String())
+	iprint.Infof(run.Colors.Gray + repo.String() + run.Colors.Reset)
 
 	taskMap, err := getDeliveryTaskMap(repo)
 	if err != nil {
@@ -97,12 +97,12 @@ func Run(ctx context.Context) (err error) {
 			runErr = errors.Join(runErr, task.Post(ctx))
 
 			if runErr != nil {
-				iprint.Errorf("FAILED    (%s)\n", taskutil.RunDurationString(taskStartTime))
+				iprint.Errorf("FAILED    (%s)\n", iprint.RunDurationString(taskStartTime))
 				iprint.Errorf("%v\n", runErr)
 
 				run.Failures = append(run.Failures, fmt.Sprintf("%s :: %s", lang, task.InfoText()))
 			} else {
-				fmt.Printf("SUCCEEDED (%s)\n", taskutil.RunDurationString(taskStartTime))
+				iprint.Goodf("SUCCEEDED (%s)\n", iprint.RunDurationString(taskStartTime))
 			}
 		}
 	}

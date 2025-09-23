@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	iprint "github.com/opensourcecorp/oscar/internal/print"
+	"github.com/opensourcecorp/oscar/internal/system"
 )
 
 // A Repo stores information about the contents of the repository being run against.
@@ -56,37 +57,37 @@ func (repo Repo) String() string {
 func NewRepo(ctx context.Context) (Repo, error) {
 	var errs error
 
-	hasGo, err := filesExistInTree(ctx, GetFileTypeListerCommand("go"))
+	hasGo, err := system.FilesExistInTree(ctx, system.GetFileTypeListerCommand("go"))
 	if err != nil {
 		errs = errors.Join(errs, err)
 	}
 
-	hasPython, err := filesExistInTree(ctx, GetFileTypeListerCommand("py"))
+	hasPython, err := system.FilesExistInTree(ctx, system.GetFileTypeListerCommand("py"))
 	if err != nil {
 		errs = errors.Join(errs, err)
 	}
 
-	hasShell, err := filesExistInTree(ctx, GetFileTypeListerCommand("sh"))
+	hasShell, err := system.FilesExistInTree(ctx, system.GetFileTypeListerCommand("sh"))
 	if err != nil {
 		errs = errors.Join(errs, err)
 	}
 
-	hasTerraform, err := filesExistInTree(ctx, GetFileTypeListerCommand("tf"))
+	hasTerraform, err := system.FilesExistInTree(ctx, system.GetFileTypeListerCommand("tf"))
 	if err != nil {
 		errs = errors.Join(errs, err)
 	}
 
-	hasContainerfile, err := filesExistInTree(ctx, GetFileTypeListerCommand("containerfile"))
+	hasContainerfile, err := system.FilesExistInTree(ctx, system.GetFileTypeListerCommand("containerfile"))
 	if err != nil {
 		errs = errors.Join(errs, err)
 	}
 
-	hasYaml, err := filesExistInTree(ctx, GetFileTypeListerCommand("yaml"))
+	hasYaml, err := system.FilesExistInTree(ctx, system.GetFileTypeListerCommand("yaml"))
 	if err != nil {
 		errs = errors.Join(errs, err)
 	}
 
-	hasMarkdown, err := filesExistInTree(ctx, GetFileTypeListerCommand("md"))
+	hasMarkdown, err := system.FilesExistInTree(ctx, system.GetFileTypeListerCommand("md"))
 	if err != nil {
 		errs = errors.Join(errs, err)
 	}
