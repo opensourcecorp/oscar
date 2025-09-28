@@ -77,15 +77,21 @@ func (t ghRelease) Exec(ctx context.Context) error {
 		draftFlag = "--draft"
 	}
 
-	// Don't label the Release as "latest" if the version isn't strictly MAJOR.MINOR.PATCH
-	latestFlag := ""
-	if regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+$`).MatchString(cfg.GetVersion()) {
-		latestFlag = "--latest"
+	// Don't label the Release as "latest" if the version isn't strictly MAJOR.MINOR.PATCH, and
+	// instead label it as a Prerelease.
+	//
+	// Note that we do it this way because the `gh` tool assumes `--latest` as always true, and so
+	// we have to set its value explicitly.
+	latestFlagValue := "true"
+	prereleaseFlag := ""
+	if !regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+$`).MatchString(cfg.GetVersion()) {
+		latestFlagValue = "false"
+		prereleaseFlag = "--prerelease"
 	}
 
 	args := []string{"bash", "-c", fmt.Sprintf(`
-		gh release create v%s %s --generate-notes --verify-tag %s ./dist/*
-		`, cfg.GetVersion(), draftFlag, latestFlag,
+		gh release create v%s %s --generate-notes --verify-tag --latest=%s %s ./dist/*
+		`, cfg.GetVersion(), draftFlag, latestFlagValue, prereleaseFlag,
 	)}
 
 	if _, err := system.RunCommand(ctx, args); err != nil {
