@@ -54,6 +54,22 @@ TODO
 <!-- | <empty cell>   | <third target for same artifact type> | -->
 <!-- | <second artifact type> | <first target for second artifact type> | -->
 
+## Installation
+
+`oscar` can be installed a few different ways:
+
+* Downloadign a binary from a [GitHub Release](https://github.com/opensourcecorp/oscar/releases).
+
+* Via `mise`, using a `github` or `go` backend:
+
+      mise use "github:opensourcecorp/oscar@<version>"
+      # or
+      mise use "go:github.com/opensourcecorp/oscar/cmd/oscar@<version>"
+
+* Via the Go toolchain:
+
+      go install github.com/opensourcecorp/oscar/cmd/oscar@<version>
+
 ## Requirements
 
 Before getting started, note that `oscar` has a few host-system runtime dependencies. Some of these

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/opensourcecorp/oscar/internal/oscarcfg"
@@ -74,9 +75,15 @@ func (t ghRelease) Exec(ctx context.Context) error {
 		draftFlag = "--draft"
 	}
 
+	// Don't label the Release as "latest" if the version isn't strictly MAJOR.MINOR.PATCH
+	latestFlag := ""
+	if regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+$`).MatchString(cfg.GetVersion()) {
+		latestFlag = "--latest"
+	}
+
 	args := []string{"bash", "-c", fmt.Sprintf(`
-		gh release create v%s %s --generate-notes --verify-tag --latest ./dist/*
-		`, cfg.GetVersion(), draftFlag,
+		gh release create v%s %s --generate-notes --verify-tag %s ./dist/*
+		`, cfg.GetVersion(), draftFlag, latestFlag,
 	)}
 
 	if _, err := system.RunCommand(ctx, args); err != nil {
@@ -124,9 +131,11 @@ func goBuild(ctx context.Context, src string) error {
 		if _, err := system.RunCommand(ctx, []string{"bash", "-c", fmt.Sprintf(`
 			CGO_ENABLED=0 \
 			GOOS=%s GOARCH=%s \
-			go build -ldflags '-extldflags "-static"' -o %s %s`,
+			go build -ldflags '-s -w -extldflags "-static"' -o %s %s
+			upx --best %s`,
 			goos, goarch,
 			target, src,
+			target,
 		)}); err != nil {
 			return fmt.Errorf("building Go binary: %w", err)
 		}
