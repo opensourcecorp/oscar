@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/opensourcecorp/oscar/internal/system"
 	"github.com/opensourcecorp/oscar/internal/tasks/tools/toolcfg"
 	taskutil "github.com/opensourcecorp/oscar/internal/tasks/util"
 )
@@ -38,7 +39,7 @@ func (t markdownlint) Exec(ctx context.Context) error {
 		return err
 	}
 
-	if _, err := taskutil.RunCommand(ctx, t.RenderRunCommandArgs()); err != nil {
+	if _, err := system.RunCommand(ctx, t.RenderRunCommandArgs()); err != nil {
 		return err
 	}
 

@@ -16,8 +16,10 @@ import (
 
 const (
 	// Command names and their flags
-	rootCmdName   = "oscar"
-	debugFlagName = "debug"
+	rootCmdName      = "oscar"
+	debugFlagName    = "debug"
+	noBannerFlagName = "no-banner"
+	noColorFlagName  = "no-color"
 
 	ciCommandName = "ci"
 
@@ -40,8 +42,27 @@ func NewRootCmd() *cli.Command {
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:    debugFlagName,
-				Usage:   "Whether to print debug logs during oscar runs",
-				Sources: cli.EnvVars(consts.DebugEnvVarName),
+				Usage:   "Whether to print debug logs during oscar runs.",
+				Sources: cli.EnvVars(consts.OscarEnvVarDebug),
+				Action: func(_ context.Context, _ *cli.Command, _ bool) error {
+					return os.Setenv(consts.OscarEnvVarDebug, "true")
+				},
+			},
+			&cli.BoolFlag{
+				Name:    noBannerFlagName,
+				Usage:   "Pass to suppress printing oscar's stylistic banner at startup.",
+				Sources: cli.EnvVars(consts.OscarEnvVarNoBanner),
+				Action: func(_ context.Context, _ *cli.Command, _ bool) error {
+					return os.Setenv(consts.OscarEnvVarNoBanner, "true")
+				},
+			},
+			&cli.BoolFlag{
+				Name:    noColorFlagName,
+				Usage:   "Pass to suppress printing colored terminal output. Note that oscar defaults to printing in color during interactive runs.",
+				Sources: cli.EnvVars(consts.OscarEnvVarNoColor),
+				Action: func(_ context.Context, _ *cli.Command, _ bool) error {
+					return os.Setenv(consts.OscarEnvVarNoColor, "true")
+				},
 			},
 		},
 		Commands: []*cli.Command{
@@ -61,13 +82,6 @@ func NewRootCmd() *cli.Command {
 	return cmd
 }
 
-// maybeSetDebug conditionally sets oscar's debug env var, so that other packages can use it.
-func maybeSetDebug(cmd *cli.Command) {
-	if cmd.Bool(debugFlagName) || os.Getenv(consts.DebugEnvVarName) != "" {
-		_ = os.Setenv(consts.DebugEnvVarName, "true")
-	}
-}
-
 // getVersion retrieves the version of the codebase.
 func getVersion() (string, error) {
 	cfg, err := oscarcfg.Get()
@@ -80,15 +94,13 @@ func getVersion() (string, error) {
 
 // rootAction defines the logic for oscar's root command.
 func rootAction(_ context.Context, cmd *cli.Command) error {
-	maybeSetDebug(cmd)
 	iprint.Debugf("oscar root command\n")
 	_ = cli.ShowAppHelp(cmd)
 	return errors.New("\nERROR: oscar requires a valid subcommand")
 }
 
 // ciAction defines the logic for oscar's ci subcommand.
-func ciAction(ctx context.Context, cmd *cli.Command) error {
-	maybeSetDebug(cmd)
+func ciAction(ctx context.Context, _ *cli.Command) error {
 	iprint.Banner()
 	iprint.Debugf("oscar ci subcommand\n")
 
@@ -100,8 +112,7 @@ func ciAction(ctx context.Context, cmd *cli.Command) error {
 }
 
 // deliverAction defines the logic for oscar's deliver subcommand.
-func deliverAction(ctx context.Context, cmd *cli.Command) error {
-	maybeSetDebug(cmd)
+func deliverAction(ctx context.Context, _ *cli.Command) error {
 	iprint.Banner()
 	iprint.Debugf("oscar deliver subcommand\n")
 

@@ -11,6 +11,7 @@ import (
 	igit "github.com/opensourcecorp/oscar/internal/git"
 	"github.com/opensourcecorp/oscar/internal/oscarcfg"
 	iprint "github.com/opensourcecorp/oscar/internal/print"
+	"github.com/opensourcecorp/oscar/internal/system"
 	taskutil "github.com/opensourcecorp/oscar/internal/tasks/util"
 	"go.yaml.in/yaml/v4"
 )
@@ -121,7 +122,7 @@ func (t imageBuildPush) Exec(ctx context.Context) error {
 		authArgs = registryMap.GitHub.AuthCommand
 	}
 
-	if _, err := taskutil.RunCommand(ctx, authArgs); err != nil {
+	if _, err := system.RunCommand(ctx, authArgs); err != nil {
 		return err
 	}
 
@@ -129,7 +130,7 @@ func (t imageBuildPush) Exec(ctx context.Context) error {
 		docker compose --file %s build --push %s
 		`, outPath, cfg.GetName(),
 	)}
-	if _, err := taskutil.RunCommand(ctx, buildPushArgs); err != nil {
+	if _, err := system.RunCommand(ctx, buildPushArgs); err != nil {
 		return err
 	}
 

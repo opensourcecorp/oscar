@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/opensourcecorp/oscar/internal/system"
 	"github.com/opensourcecorp/oscar/internal/tasks/tools/toolcfg"
 	taskutil "github.com/opensourcecorp/oscar/internal/tasks/util"
 )
@@ -24,7 +25,7 @@ func NewTasksForCI(repo taskutil.Repo) []taskutil.Tasker {
 					RunArgs: []string{"bash", "-c",
 						fmt.Sprintf(
 							`yamlfmt -conf {{ConfigFilePath}} $(%s)`,
-							taskutil.GetFileTypeListerCommand("yaml"),
+							system.GetFileTypeListerCommand("yaml"),
 						),
 					},
 					ConfigFilePath: filepath.Join(os.TempDir(), ".yamlfmt"),
@@ -35,7 +36,7 @@ func NewTasksForCI(repo taskutil.Repo) []taskutil.Tasker {
 					RunArgs: []string{"bash", "-c",
 						fmt.Sprintf(
 							`yamllint --strict --config-file {{ConfigFilePath}} $(%s)`,
-							taskutil.GetFileTypeListerCommand("yaml"),
+							system.GetFileTypeListerCommand("yaml"),
 						),
 					},
 					ConfigFilePath: filepath.Join(os.TempDir(), ".yamllint"),
@@ -56,7 +57,7 @@ func (t yamllint) Exec(ctx context.Context) error {
 		return err
 	}
 
-	if _, err := taskutil.RunCommand(ctx, t.RenderRunCommandArgs()); err != nil {
+	if _, err := system.RunCommand(ctx, t.RenderRunCommandArgs()); err != nil {
 		return err
 	}
 
@@ -75,7 +76,7 @@ func (t yamlfmt) Exec(ctx context.Context) error {
 		return err
 	}
 
-	if _, err := taskutil.RunCommand(ctx, t.RenderRunCommandArgs()); err != nil {
+	if _, err := system.RunCommand(ctx, t.RenderRunCommandArgs()); err != nil {
 		return err
 	}
 

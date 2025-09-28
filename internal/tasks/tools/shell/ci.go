@@ -3,6 +3,7 @@ package shtools
 import (
 	"context"
 
+	"github.com/opensourcecorp/oscar/internal/system"
 	taskutil "github.com/opensourcecorp/oscar/internal/tasks/util"
 )
 
@@ -44,7 +45,7 @@ func (t shellcheck) InfoText() string { return "Lint (shellcheck)" }
 
 // Run implements [taskutil.Tasker.Run].
 func (t shellcheck) Exec(ctx context.Context) error {
-	if _, err := taskutil.RunCommand(ctx, t.RunArgs); err != nil {
+	if _, err := system.RunCommand(ctx, t.RunArgs); err != nil {
 		return err
 	}
 
@@ -59,7 +60,7 @@ func (t shfmt) InfoText() string { return "Format (shfmt)" }
 
 // Run implements [taskutil.Tasker.Run].
 func (t shfmt) Exec(ctx context.Context) error {
-	if _, err := taskutil.RunCommand(ctx, t.RunArgs); err != nil {
+	if _, err := system.RunCommand(ctx, t.RunArgs); err != nil {
 		return err
 	}
 

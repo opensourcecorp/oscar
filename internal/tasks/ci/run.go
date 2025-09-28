@@ -58,19 +58,7 @@ func Run(ctx context.Context) (err error) {
 		return fmt.Errorf("internal error setting up run info: %w", err)
 	}
 
-	git, err := igit.New(ctx)
-	if err != nil {
-		return err
-	}
-	fmt.Print(git.String())
-
-	repo, err := taskutil.NewRepo(ctx)
-	if err != nil {
-		return fmt.Errorf("getting repo composition: %w", err)
-	}
-	fmt.Print(repo.String())
-
-	taskMap, err := getCITaskMap(repo)
+	taskMap, err := getCITaskMap(run.Repo)
 	if err != nil {
 		return err
 	}
@@ -104,7 +92,7 @@ func Run(ctx context.Context) (err error) {
 			}
 
 			if runErr != nil || gitStatusHasChanged {
-				iprint.Errorf("FAILED (%s)\n", taskutil.RunDurationString(taskStartTime))
+				iprint.Errorf("FAILED (%s)\n", iprint.RunDurationString(taskStartTime))
 				iprint.Errorf("\n")
 
 				if runErr != nil {
@@ -125,7 +113,7 @@ func Run(ctx context.Context) (err error) {
 					return fmt.Errorf("internal error: %w", err)
 				}
 			} else {
-				fmt.Printf("PASSED (%s)\n", taskutil.RunDurationString(taskStartTime))
+				iprint.Goodf("PASSED (%s)\n", iprint.RunDurationString(taskStartTime))
 			}
 		}
 	}

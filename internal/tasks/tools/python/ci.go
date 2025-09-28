@@ -3,6 +3,7 @@ package pytools
 import (
 	"context"
 
+	"github.com/opensourcecorp/oscar/internal/system"
 	taskutil "github.com/opensourcecorp/oscar/internal/tasks/util"
 )
 
@@ -54,7 +55,7 @@ func (t buildTask) InfoText() string { return "Build" }
 
 // Run implements [taskutil.Tasker.Run].
 func (t buildTask) Exec(ctx context.Context) error {
-	if _, err := taskutil.RunCommand(ctx, t.RunArgs); err != nil {
+	if _, err := system.RunCommand(ctx, t.RunArgs); err != nil {
 		return err
 	}
 
@@ -69,7 +70,7 @@ func (t ruffLint) InfoText() string { return "Lint (ruff)" }
 
 // Run implements [taskutil.Tasker.Run].
 func (t ruffLint) Exec(ctx context.Context) error {
-	if _, err := taskutil.RunCommand(ctx, t.RunArgs); err != nil {
+	if _, err := system.RunCommand(ctx, t.RunArgs); err != nil {
 		return err
 	}
 
@@ -84,7 +85,7 @@ func (t ruffFormat) InfoText() string { return "Format (ruff)" }
 
 // Run implements [taskutil.Tasker.Run].
 func (t ruffFormat) Exec(ctx context.Context) error {
-	if _, err := taskutil.RunCommand(ctx, t.RunArgs); err != nil {
+	if _, err := system.RunCommand(ctx, t.RunArgs); err != nil {
 		return err
 	}
 
@@ -99,7 +100,7 @@ func (t pydoclint) InfoText() string { return "Lint (pydoclint)" }
 
 // Run implements [taskutil.Tasker.Run].
 func (t pydoclint) Exec(ctx context.Context) error {
-	if _, err := taskutil.RunCommand(ctx, t.RunArgs); err != nil {
+	if _, err := system.RunCommand(ctx, t.RunArgs); err != nil {
 		return err
 	}
 
@@ -114,7 +115,7 @@ func (t mypy) InfoText() string { return "Type-check (mypy)" }
 
 // Run implements [taskutil.Tasker.Run].
 func (t mypy) Exec(ctx context.Context) error {
-	if _, err := taskutil.RunCommand(ctx, t.RunArgs); err != nil {
+	if _, err := system.RunCommand(ctx, t.RunArgs); err != nil {
 		return err
 	}
 

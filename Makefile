@@ -35,7 +35,8 @@ test: ci
 # NOTE: oscar builds itself IRL, but having a target here makes it easier to have the Containerfile
 # have a stage-copiable output
 build: FORCE
-	@$(RUN) go build -o ./build/oscar ./cmd/oscar
+	@$(RUN) go build -ldflags '-s -w -extldflags "-static"' -o ./build/$(BINNAME) ./cmd/$(BINNAME)
+	@upx --best ./build/$(BINNAME)
 
 clean: FORCE
 	@rm -rf \
