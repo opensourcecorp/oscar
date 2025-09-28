@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/opensourcecorp/oscar/internal/consts"
-	igit "github.com/opensourcecorp/oscar/internal/git"
 	iprint "github.com/opensourcecorp/oscar/internal/print"
 	"github.com/opensourcecorp/oscar/internal/tasks/ci"
 	containertools "github.com/opensourcecorp/oscar/internal/tasks/tools/containers"
@@ -64,19 +63,7 @@ func Run(ctx context.Context) (err error) {
 		return fmt.Errorf("internal error setting up run info: %w", err)
 	}
 
-	git, err := igit.New(ctx)
-	if err != nil {
-		return err
-	}
-	iprint.Infof(run.Colors.Gray + git.String() + run.Colors.Reset)
-
-	repo, err := taskutil.NewRepo(ctx)
-	if err != nil {
-		return fmt.Errorf("getting repo composition: %w", err)
-	}
-	iprint.Infof(run.Colors.Gray + repo.String() + run.Colors.Reset)
-
-	taskMap, err := getDeliveryTaskMap(repo)
+	taskMap, err := getDeliveryTaskMap(run.Repo)
 	if err != nil {
 		return err
 	}

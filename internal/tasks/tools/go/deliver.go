@@ -2,6 +2,7 @@ package gotools
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/opensourcecorp/oscar/internal/oscarcfg"
+	iprint "github.com/opensourcecorp/oscar/internal/print"
 	"github.com/opensourcecorp/oscar/internal/system"
 	taskutil "github.com/opensourcecorp/oscar/internal/tasks/util"
 )
@@ -47,12 +49,12 @@ func (t ghRelease) Exec(ctx context.Context) error {
 		return err
 	}
 
-	var buildErr error
+	var buildErrs error
 	for _, src := range cfg.GetDeliverables().GetGoGithubRelease().GetBuildSources() {
-		buildErr = goBuild(ctx, src)
+		buildErrs = errors.Join(buildErrs, goBuild(ctx, src))
 	}
-	if buildErr != nil {
-		return err
+	if buildErrs != nil {
+		return buildErrs
 	}
 
 	buildDir := "build"
@@ -121,6 +123,8 @@ func goBuild(ctx context.Context, src string) error {
 	}
 
 	for _, distro := range distros {
+		iprint.Debugf("building for %s\n", distro)
+
 		splits := strings.Split(distro, "/")
 		goos := splits[0]
 		goarch := splits[1]
@@ -128,14 +132,20 @@ func goBuild(ctx context.Context, src string) error {
 		binName := filepath.Base(src)
 		target := filepath.Join(targetDir, fmt.Sprintf("%s-%s-%s", binName, goos, goarch))
 
+		// At the time of this writing, UPX only works for Linux, so run it accordingly
+		runUPX := fmt.Sprintf("upx --best %s", target)
+		if goos != "linux" {
+			runUPX = ""
+		}
+
 		if _, err := system.RunCommand(ctx, []string{"bash", "-c", fmt.Sprintf(`
 			CGO_ENABLED=0 \
 			GOOS=%s GOARCH=%s \
 			go build -ldflags '-s -w -extldflags "-static"' -o %s %s
-			upx --best %s`,
+			%s`,
 			goos, goarch,
 			target, src,
-			target,
+			runUPX,
 		)}); err != nil {
 			return fmt.Errorf("building Go binary: %w", err)
 		}
