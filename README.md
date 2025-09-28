@@ -58,7 +58,7 @@ TODO
 
 `oscar` can be installed a few different ways:
 
-* Downloadign a binary from a [GitHub Release](https://github.com/opensourcecorp/oscar/releases).
+* Downloading a binary from a [GitHub Release](https://github.com/opensourcecorp/oscar/releases).
 
 * Via `mise`, using a `github` or `go` backend:
 
