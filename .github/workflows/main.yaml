@@ -18,6 +18,8 @@ env:
 
 jobs:
   ci:
+    # CI is skipped because `deliver` runs it first anyway
+    if: "github.ref != 'refs/heads/main'"
     runs-on: "ubuntu-latest"
     permissions:
       contents: "read"
