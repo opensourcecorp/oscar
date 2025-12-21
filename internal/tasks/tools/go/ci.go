@@ -15,6 +15,7 @@ type (
 	goModCheck     struct{ taskutil.Tool }
 	generateCodeCI struct{ taskutil.Tool }
 	goBuildCI      struct{ taskutil.Tool }
+	golangciFmt    struct{ taskutil.Tool }
 	golangciLint   struct{ taskutil.Tool }
 	govulncheck    struct{ taskutil.Tool }
 	goTest         struct{ taskutil.Tool }
@@ -37,6 +38,14 @@ func NewTasksForCI(repo taskutil.Repo) []taskutil.Tasker {
 			goBuildCI{
 				Tool: taskutil.Tool{
 					RunArgs: []string{"go", "build", "./..."},
+				},
+			},
+			golangciFmt{
+				Tool: taskutil.Tool{
+					RunArgs: []string{
+						"golangci-lint", "fmt", "--config", "{{ConfigFilePath}}",
+					},
+					ConfigFilePath: filepath.Join(os.TempDir(), ".golangci.yaml"),
 				},
 			},
 			golangciLint{
@@ -88,20 +97,13 @@ func (t generateCodeCI) Exec(ctx context.Context) error {
 	}
 
 	// Generating code will likely throw diffs if not also addressing other formatting CI checks, so
-	// run those here again as well.
+	// run those here as well.
 	tasks := NewTasksForCI(taskutil.Repo{HasGo: true})
 	for _, task := range tasks {
-		if wantToRun, isOfType := task.(goFormat); isOfType {
+		if wantToRun, isOfType := task.(golangciFmt); isOfType {
 			err := wantToRun.Exec(ctx)
 			if err != nil {
-				return fmt.Errorf("running Go formatter after code generation: %w", err)
-			}
-		}
-
-		if wantToRun, isOfType := task.(goImports); isOfType {
-			err := wantToRun.Exec(ctx)
-			if err != nil {
-				return fmt.Errorf("running Go formatter after code generation: %w", err)
+				return fmt.Errorf("running Go formatters after code generation: %w", err)
 			}
 		}
 	}
@@ -126,6 +128,33 @@ func (t goBuildCI) Exec(ctx context.Context) error {
 
 // Post implements [taskutil.Tasker.Post].
 func (t goBuildCI) Post(_ context.Context) error { return nil }
+
+// InfoText implements [taskutil.Tasker.InfoText].
+func (t golangciFmt) InfoText() string { return "Format (golangci-lint)" }
+
+// Exec implements [taskutil.Tasker.Exec].
+func (t golangciFmt) Exec(ctx context.Context) error {
+	err := toolcfg.SetupConfigFile(t.Tool)
+	if err != nil {
+		return err
+	}
+
+	if _, err := system.RunCommand(ctx, t.RenderRunCommandArgs()); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Post implements [taskutil.Tasker.Post].
+func (t golangciFmt) Post(_ context.Context) error {
+	err := os.RemoveAll(t.ConfigFilePath)
+	if err != nil {
+		return fmt.Errorf("removing config file: %w", err)
+	}
+
+	return nil
+}
 
 // InfoText implements [taskutil.Tasker.InfoText].
 func (t golangciLint) InfoText() string { return "Lint (golangci-lint)" }

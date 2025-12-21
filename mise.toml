@@ -5,7 +5,7 @@ jobs = 4
 [tools]
 buf = "1.57.2"
 github-cli = "2.79.0"
-go = "1.25.3"
+go = "1.25.5"
 hadolint = "2.13.1"
 markdownlint-cli2 = "0.18.1"
 # required for markdownlint-cli2

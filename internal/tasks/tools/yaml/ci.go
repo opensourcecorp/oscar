@@ -51,7 +51,7 @@ func NewTasksForCI(repo taskutil.Repo) []taskutil.Tasker {
 // InfoText implements [taskutil.Tasker.InfoText].
 func (t yamllint) InfoText() string { return "Lint (yamllint)" }
 
-// Run implements [taskutil.Tasker.Run].
+// Exec implements [taskutil.Tasker.Exec].
 func (t yamllint) Exec(ctx context.Context) error {
 	if err := toolcfg.SetupConfigFile(t.Tool); err != nil {
 		return err
@@ -70,7 +70,7 @@ func (t yamllint) Post(_ context.Context) error { return nil }
 // InfoText implements [taskutil.Tasker.InfoText].
 func (t yamlfmt) InfoText() string { return "Format (yamlfmt)" }
 
-// Run implements [taskutil.Tasker.Run].
+// Exec implements [taskutil.Tasker.Exec].
 func (t yamlfmt) Exec(ctx context.Context) error {
 	if err := toolcfg.SetupConfigFile(t.Tool); err != nil {
 		return err

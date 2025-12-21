@@ -39,7 +39,7 @@ func NewTasksForCI(repo taskutil.Repo) []taskutil.Tasker {
 // InfoText implements [taskutil.Tasker.InfoText].
 func (t hadolint) InfoText() string { return "Lint (hadolint)" }
 
-// Run implements [taskutil.Tasker.Run].
+// Exec implements [taskutil.Tasker.Exec].
 func (t hadolint) Exec(ctx context.Context) error {
 	if err := toolcfg.SetupConfigFile(t.Tool); err != nil {
 		return err

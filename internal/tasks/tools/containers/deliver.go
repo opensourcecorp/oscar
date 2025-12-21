@@ -66,7 +66,7 @@ func NewTasksForDelivery(repo taskutil.Repo) ([]taskutil.Tasker, error) {
 // InfoText implements [taskutil.Tasker.InfoText].
 func (t imageBuildPush) InfoText() string { return "Image Build & Push" }
 
-// Run implements [taskutil.Tasker.Run].
+// Exec implements [taskutil.Tasker.Exec].
 func (t imageBuildPush) Exec(ctx context.Context) error {
 	rootCfg, err := oscarcfg.Get()
 	if err != nil {

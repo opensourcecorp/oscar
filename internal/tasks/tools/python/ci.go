@@ -53,7 +53,7 @@ func NewTasksForCI(repo taskutil.Repo) []taskutil.Tasker {
 // InfoText implements [taskutil.Tasker.InfoText].
 func (t buildTask) InfoText() string { return "Build" }
 
-// Run implements [taskutil.Tasker.Run].
+// Exec implements [taskutil.Tasker.Exec].
 func (t buildTask) Exec(ctx context.Context) error {
 	if _, err := system.RunCommand(ctx, t.RunArgs); err != nil {
 		return err
@@ -68,7 +68,7 @@ func (t buildTask) Post(_ context.Context) error { return nil }
 // InfoText implements [taskutil.Tasker.InfoText].
 func (t ruffLint) InfoText() string { return "Lint (ruff)" }
 
-// Run implements [taskutil.Tasker.Run].
+// Exec implements [taskutil.Tasker.Exec].
 func (t ruffLint) Exec(ctx context.Context) error {
 	if _, err := system.RunCommand(ctx, t.RunArgs); err != nil {
 		return err
@@ -83,7 +83,7 @@ func (t ruffLint) Post(_ context.Context) error { return nil }
 // InfoText implements [taskutil.Tasker.InfoText].
 func (t ruffFormat) InfoText() string { return "Format (ruff)" }
 
-// Run implements [taskutil.Tasker.Run].
+// Exec implements [taskutil.Tasker.Exec].
 func (t ruffFormat) Exec(ctx context.Context) error {
 	if _, err := system.RunCommand(ctx, t.RunArgs); err != nil {
 		return err
@@ -98,7 +98,7 @@ func (t ruffFormat) Post(_ context.Context) error { return nil }
 // InfoText implements [taskutil.Tasker.InfoText].
 func (t pydoclint) InfoText() string { return "Lint (pydoclint)" }
 
-// Run implements [taskutil.Tasker.Run].
+// Exec implements [taskutil.Tasker.Exec].
 func (t pydoclint) Exec(ctx context.Context) error {
 	if _, err := system.RunCommand(ctx, t.RunArgs); err != nil {
 		return err
@@ -113,7 +113,7 @@ func (t pydoclint) Post(_ context.Context) error { return nil }
 // InfoText implements [taskutil.Tasker.InfoText].
 func (t mypy) InfoText() string { return "Type-check (mypy)" }
 
-// Run implements [taskutil.Tasker.Run].
+// Exec implements [taskutil.Tasker.Exec].
 func (t mypy) Exec(ctx context.Context) error {
 	if _, err := system.RunCommand(ctx, t.RunArgs); err != nil {
 		return err
