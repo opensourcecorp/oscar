@@ -53,6 +53,7 @@ func (t ghRelease) Exec(ctx context.Context) error {
 	for _, src := range cfg.GetDeliverables().GetGoGithubRelease().GetBuildSources() {
 		buildErrs = errors.Join(buildErrs, goBuild(ctx, src))
 	}
+
 	if buildErrs != nil {
 		return buildErrs
 	}
@@ -102,7 +103,10 @@ func (t ghRelease) Post(_ context.Context) error { return nil }
 // root-level "build/" subdirectory.
 func goBuild(ctx context.Context, src string) error {
 	if strings.HasSuffix(src, ".go") {
-		return fmt.Errorf("provided Go build source '%s' was a file, but must be a path to a package", src)
+		return fmt.Errorf(
+			"provided Go build source '%s' was a file, but must be a path to a package",
+			src,
+		)
 	}
 
 	targetDir := "build"

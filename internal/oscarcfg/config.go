@@ -43,7 +43,7 @@ func Get(pathOverride ...string) (*oscarcfgpbv1.Config, error) {
 	}
 	iprint.Debugf("map data as JSON string: %s\n", string(jsonData))
 
-	var cfg = &oscarcfgpbv1.Config{}
+	cfg := &oscarcfgpbv1.Config{}
 	if err := protojson.Unmarshal(jsonData, cfg); err != nil {
 		return nil, fmt.Errorf("unmarshalling oscar config file '%s': %w", path, err)
 	}

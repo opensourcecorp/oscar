@@ -1,6 +1,6 @@
 module github.com/opensourcecorp/oscar
 
-go 1.24.4
+go 1.25.3
 
 require (
 	github.com/urfave/cli/v3 v3.4.1

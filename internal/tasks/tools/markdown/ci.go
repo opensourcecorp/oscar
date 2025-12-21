@@ -20,7 +20,11 @@ func NewTasksForCI(repo taskutil.Repo) []taskutil.Tasker {
 		return []taskutil.Tasker{
 			markdownlint{
 				Tool: taskutil.Tool{
-					RunArgs:        []string{"markdownlint-cli2", "--config", "{{ConfigFilePath}}", "**/*.md"},
+					RunArgs: []string{
+						"markdownlint-cli2",
+						"--config", "{{ConfigFilePath}}",
+						"**/*.md",
+					},
 					ConfigFilePath: filepath.Join(os.TempDir(), ".markdownlint-cli2.yaml"),
 				},
 			},

@@ -13,14 +13,9 @@ import (
 
 type (
 	goModCheck     struct{ taskutil.Tool }
-	goFormat       struct{ taskutil.Tool }
 	generateCodeCI struct{ taskutil.Tool }
 	goBuildCI      struct{ taskutil.Tool }
-	goVet          struct{ taskutil.Tool }
-	staticcheck    struct{ taskutil.Tool }
-	revive         struct{ taskutil.Tool }
-	errcheck       struct{ taskutil.Tool }
-	goImports      struct{ taskutil.Tool }
+	golangciLint   struct{ taskutil.Tool }
 	govulncheck    struct{ taskutil.Tool }
 	goTest         struct{ taskutil.Tool }
 )
@@ -34,16 +29,6 @@ func NewTasksForCI(repo taskutil.Repo) []taskutil.Tasker {
 					RunArgs: []string{"go", "mod", "tidy"},
 				},
 			},
-			goFormat{
-				Tool: taskutil.Tool{
-					RunArgs: []string{"go", "fmt", "./..."},
-				},
-			},
-			goImports{
-				Tool: taskutil.Tool{
-					RunArgs: []string{"goimports", "-l", "-w", "."},
-				},
-			},
 			generateCodeCI{
 				Tool: taskutil.Tool{
 					RunArgs: []string{"go", "generate", "./..."},
@@ -54,30 +39,12 @@ func NewTasksForCI(repo taskutil.Repo) []taskutil.Tasker {
 					RunArgs: []string{"go", "build", "./..."},
 				},
 			},
-			goVet{
-				Tool: taskutil.Tool{
-					RunArgs: []string{"go", "vet", "./..."},
-				},
-			},
-			staticcheck{
-				Tool: taskutil.Tool{
-					RunArgs: []string{"staticcheck", "./..."},
-					// NOTE: staticcheck does not have a flag to point to a config file, so we need
-					// to put it at the repo root
-					ConfigFilePath: filepath.Join("staticcheck.conf"),
-				},
-			},
-			revive{
+			golangciLint{
 				Tool: taskutil.Tool{
 					RunArgs: []string{
-						"revive", "--config", "{{ConfigFilePath}}", "--set_exit_status", "./...",
+						"golangci-lint", "run", "--config", "{{ConfigFilePath}}",
 					},
-					ConfigFilePath: filepath.Join(os.TempDir(), "revive.toml"),
-				},
-			},
-			errcheck{
-				Tool: taskutil.Tool{
-					RunArgs: []string{"errcheck", "./..."},
+					ConfigFilePath: filepath.Join(os.TempDir(), ".golangci.yaml"),
 				},
 			},
 			govulncheck{
@@ -112,36 +79,6 @@ func (t goModCheck) Exec(ctx context.Context) error {
 func (t goModCheck) Post(_ context.Context) error { return nil }
 
 // InfoText implements [taskutil.Tasker.InfoText].
-func (t goFormat) InfoText() string { return "Format" }
-
-// Exec implements [taskutil.Tasker.Exec].
-func (t goFormat) Exec(ctx context.Context) error {
-	if _, err := system.RunCommand(ctx, t.RunArgs); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Post implements [taskutil.Tasker.Post].
-func (t goFormat) Post(_ context.Context) error { return nil }
-
-// InfoText implements [taskutil.Tasker.InfoText].
-func (t goImports) InfoText() string { return "Format imports" }
-
-// Exec implements [taskutil.Tasker.Exec].
-func (t goImports) Exec(ctx context.Context) error {
-	if _, err := system.RunCommand(ctx, t.RunArgs); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Post implements [taskutil.Tasker.Post].
-func (t goImports) Post(_ context.Context) error { return nil }
-
-// InfoText implements [taskutil.Tasker.InfoText].
 func (t generateCodeCI) InfoText() string { return "Generate code" }
 
 // Exec implements [taskutil.Tasker.Exec].
@@ -155,12 +92,15 @@ func (t generateCodeCI) Exec(ctx context.Context) error {
 	tasks := NewTasksForCI(taskutil.Repo{HasGo: true})
 	for _, task := range tasks {
 		if wantToRun, isOfType := task.(goFormat); isOfType {
-			if err := wantToRun.Exec(ctx); err != nil {
+			err := wantToRun.Exec(ctx)
+			if err != nil {
 				return fmt.Errorf("running Go formatter after code generation: %w", err)
 			}
 		}
+
 		if wantToRun, isOfType := task.(goImports); isOfType {
-			if err := wantToRun.Exec(ctx); err != nil {
+			err := wantToRun.Exec(ctx)
+			if err != nil {
 				return fmt.Errorf("running Go formatter after code generation: %w", err)
 			}
 		}
@@ -188,51 +128,12 @@ func (t goBuildCI) Exec(ctx context.Context) error {
 func (t goBuildCI) Post(_ context.Context) error { return nil }
 
 // InfoText implements [taskutil.Tasker.InfoText].
-func (t goVet) InfoText() string { return "Vet" }
+func (t golangciLint) InfoText() string { return "Lint (golangci-lint)" }
 
 // Exec implements [taskutil.Tasker.Exec].
-func (t goVet) Exec(ctx context.Context) error {
-	if _, err := system.RunCommand(ctx, t.RunArgs); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Post implements [taskutil.Tasker.Post].
-func (t goVet) Post(_ context.Context) error { return nil }
-
-// InfoText implements [taskutil.Tasker.InfoText].
-func (t staticcheck) InfoText() string { return "Lint (staticcheck)" }
-
-// Exec implements [taskutil.Tasker.Exec].
-func (t staticcheck) Exec(ctx context.Context) error {
-	if err := toolcfg.SetupConfigFile(t.Tool); err != nil {
-		return err
-	}
-
-	if _, err := system.RunCommand(ctx, t.RunArgs); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Post implements [taskutil.Tasker.Post].
-func (t staticcheck) Post(_ context.Context) error {
-	if err := os.RemoveAll(t.ConfigFilePath); err != nil {
-		return fmt.Errorf("removing config file: %w", err)
-	}
-
-	return nil
-}
-
-// InfoText implements [taskutil.Tasker.InfoText].
-func (t revive) InfoText() string { return "Lint (revive)" }
-
-// Exec implements [taskutil.Tasker.Exec].
-func (t revive) Exec(ctx context.Context) error {
-	if err := toolcfg.SetupConfigFile(t.Tool); err != nil {
+func (t golangciLint) Exec(ctx context.Context) error {
+	err := toolcfg.SetupConfigFile(t.Tool)
+	if err != nil {
 		return err
 	}
 
@@ -244,28 +145,14 @@ func (t revive) Exec(ctx context.Context) error {
 }
 
 // Post implements [taskutil.Tasker.Post].
-func (t revive) Post(_ context.Context) error {
-	if err := os.RemoveAll(t.ConfigFilePath); err != nil {
+func (t golangciLint) Post(_ context.Context) error {
+	err := os.RemoveAll(t.ConfigFilePath)
+	if err != nil {
 		return fmt.Errorf("removing config file: %w", err)
 	}
 
 	return nil
 }
-
-// InfoText implements [taskutil.Tasker.InfoText].
-func (t errcheck) InfoText() string { return "Lint (errcheck)" }
-
-// Exec implements [taskutil.Tasker.Exec].
-func (t errcheck) Exec(ctx context.Context) error {
-	if _, err := system.RunCommand(ctx, t.RunArgs); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Post implements [taskutil.Tasker.Post].
-func (t errcheck) Post(_ context.Context) error { return nil }
 
 // InfoText implements [taskutil.Tasker.InfoText].
 func (t govulncheck) InfoText() string { return "Vulnerability scan (govulncheck)" }

@@ -33,6 +33,7 @@ func (t versionCI) Exec(ctx context.Context) (err error) {
 	if err != nil {
 		return fmt.Errorf("getting oscar config: %w", err)
 	}
+
 	version := cfg.GetVersion()
 	iprint.Debugf("provided version: %s\n", version)
 
@@ -41,9 +42,10 @@ func (t versionCI) Exec(ctx context.Context) (err error) {
 	// least of which being that alternatives would be unreliable in e.g. GitHub Actions CI based on
 	// how it treats PR checkouts et al. A small price to pay for reliability.
 	tmpCloneDir := filepath.Join(os.TempDir(), "oscar-ci", "this-repo")
-	if err := os.MkdirAll(filepath.Dir(tmpCloneDir), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(tmpCloneDir), 0o755); err != nil {
 		return fmt.Errorf("creating temp clone parent directory: %w", err)
 	}
+
 	defer func() {
 		if rmErr := os.RemoveAll(tmpCloneDir); rmErr != nil {
 			err = errors.Join(err, fmt.Errorf("removing temp clone directory: %w", rmErr))
@@ -65,7 +67,9 @@ func (t versionCI) Exec(ctx context.Context) (err error) {
 	if err != nil {
 		return fmt.Errorf("getting oscar config: %w", err)
 	}
+
 	mainVersion := mainCfg.GetVersion()
+
 	iprint.Debugf("main version: %s\n", version)
 
 	// Need to check if we're already on the main branch, since checking its version against itself
@@ -77,6 +81,7 @@ func (t versionCI) Exec(ctx context.Context) (err error) {
 	if err != nil {
 		return fmt.Errorf("checking current Git branch/ref: %w", err)
 	}
+
 	iprint.Debugf("current Git branch/ref: %s\n", branch)
 
 	if branch != "main" {

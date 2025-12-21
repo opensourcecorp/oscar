@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	// Command names and their flags
+	// Command names and their flags.
 	rootCmdName      = "oscar"
 	debugFlagName    = "debug"
 	noBannerFlagName = "no-banner"
@@ -89,7 +89,7 @@ func getVersion() (string, error) {
 		return "", fmt.Errorf("reading oscar config file: %w", err)
 	}
 
-	return cfg.Version, nil
+	return cfg.GetVersion(), nil
 }
 
 // rootAction defines the logic for oscar's root command.

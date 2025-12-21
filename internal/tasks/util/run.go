@@ -46,12 +46,14 @@ func NewRun(ctx context.Context, runType string) (Run, error) {
 	if err != nil {
 		return Run{}, err
 	}
+
 	iprint.Infof(colors.Gray + git.String() + colors.Reset)
 
 	repo, err := NewRepo(ctx)
 	if err != nil {
 		return Run{}, fmt.Errorf("getting repo composition: %w", err)
 	}
+
 	iprint.Infof(colors.Gray + repo.String() + colors.Reset)
 
 	return Run{
@@ -111,11 +113,14 @@ func (run Run) ReportSuccess() {
 func (run Run) ReportFailure(err error) error {
 	iprint.Errorf("\n%s\n", strings.Repeat("=", 65))
 	iprint.Errorf("The following tasks failed: (%s)\n", iprint.RunDurationString(run.StartTime))
+
 	for _, f := range run.Failures {
 		iprint.Errorf("- %s\n", f)
 	}
+
 	iprint.Errorf("%s\n\n", strings.Repeat("=", 65))
 
 	err = errors.Join(err, errors.New("one or more tasks failed"))
+
 	return err
 }

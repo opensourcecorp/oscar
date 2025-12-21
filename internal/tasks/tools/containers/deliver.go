@@ -72,6 +72,7 @@ func (t imageBuildPush) Exec(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
 	cfg := rootCfg.GetDeliverables().GetContainerImage()
 
 	uri, err := constructImageURI(ctx, rootCfg)
@@ -88,6 +89,7 @@ func (t imageBuildPush) Exec(ctx context.Context) error {
 	if err := yaml.Unmarshal(composeFileContents, composeFile); err != nil {
 		return err
 	}
+
 	iprint.Debugf("composeFile unmarshalled: %#v\n", composeFile)
 
 	curDir, err := os.Getwd()
@@ -103,6 +105,7 @@ func (t imageBuildPush) Exec(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
 	iprint.Debugf("edited Compose file YAML: %s\n", string(composeOut))
 
 	workDir := filepath.Join(os.TempDir(), "oscar-oci")
@@ -118,7 +121,7 @@ func (t imageBuildPush) Exec(ctx context.Context) error {
 	registryMap := newRegistryMap(cfg.GetName())
 
 	var authArgs []string
-	if strings.Contains(cfg.Registry, "ghcr") {
+	if strings.Contains(cfg.GetRegistry(), "ghcr") {
 		authArgs = registryMap.GitHub.AuthCommand
 	}
 
@@ -143,6 +146,7 @@ func (t imageBuildPush) Post(_ context.Context) error { return nil }
 // constructImageURI constructs an image URI based on data from oscar's config & Git.
 func constructImageURI(ctx context.Context, rootCfg *oscarcfgpbv1.Config) (string, error) {
 	cfg := rootCfg.GetDeliverables().GetContainerImage()
+
 	git, err := igit.New(ctx)
 	if err != nil {
 		return "", fmt.Errorf("getting Git info: %w", err)
@@ -158,6 +162,7 @@ func constructImageURI(ctx context.Context, rootCfg *oscarcfgpbv1.Config) (strin
 	} else {
 		tag = fmt.Sprintf("%s-%s", git.SanitizedBranch(), git.LatestCommit)
 	}
+
 	if git.IsDirty {
 		tag = fmt.Sprintf("%s-%s-dirty", git.SanitizedBranch(), git.LatestCommit)
 	}

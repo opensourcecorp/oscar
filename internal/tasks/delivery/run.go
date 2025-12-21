@@ -20,6 +20,7 @@ import (
 // name.
 func getDeliveryTaskMap(repo taskutil.Repo) (taskutil.TaskMap, error) {
 	out := make(taskutil.TaskMap)
+
 	for langName, getTasksFunc := range map[string]func(taskutil.Repo) ([]taskutil.Tasker, error){
 		// Independent of Delivery tasks, always push a Git Tag first
 		"0 - Create Git Tag": gittagtools.NewTasksForDelivery,
@@ -75,14 +76,16 @@ func Run(ctx context.Context) (err error) {
 
 		for _, task := range tasks {
 			taskStartTime := time.Now()
+
 			run.PrintTaskBanner(task)
 
 			// NOTE: this error is checked later, when we can check the Run, Post, and git-diff
 			// potential errors together
 			var runErr error
-			runErr = errors.Join(runErr, task.Exec(ctx))
-			runErr = errors.Join(runErr, task.Post(ctx))
 
+			runErr = errors.Join(runErr, task.Exec(ctx))
+
+			runErr = errors.Join(runErr, task.Post(ctx))
 			if runErr != nil {
 				iprint.Errorf("FAILED    (%s)\n", iprint.RunDurationString(taskStartTime))
 				iprint.Errorf("%v\n", runErr)

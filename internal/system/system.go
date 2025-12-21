@@ -21,6 +21,7 @@ import (
 // Init runs setup & checks against the host itself, so that oscar can run.
 func Init(ctx context.Context) error {
 	iprint.Infof("Initializing the host, this might take some time... ")
+
 	startTime := time.Now()
 
 	requiredSystemCommands := [][]string{
@@ -30,18 +31,21 @@ func Init(ctx context.Context) error {
 
 	for _, cmd := range requiredSystemCommands {
 		iprint.Debugf("Running '%v'\n", cmd)
+
 		if output, err := exec.CommandContext(ctx, cmd[0], cmd[1:]...).CombinedOutput(); err != nil {
 			return fmt.Errorf(
 				"command '%s' possibly not found on PATH, cannot continue (error: %w -- output: %s)",
-				cmd[0], err, string(output),
+				cmd[0],
+				err,
+				string(output),
 			)
 		}
 	}
 
 	for _, d := range []string{consts.OscarHome, consts.OscarHomeBin} {
-		if err := os.MkdirAll(d, 0755); err != nil {
+		if err := os.MkdirAll(d, 0o755); err != nil {
 			return fmt.Errorf(
-				"internal error when creating oscar directory '%s': %v",
+				"internal error when creating oscar directory '%s': %w",
 				d, err,
 			)
 		}
@@ -50,7 +54,7 @@ func Init(ctx context.Context) error {
 	for name, value := range consts.MiseEnvVars {
 		if err := os.Setenv(name, value); err != nil {
 			return fmt.Errorf(
-				"internal error when setting mise env var '%s': %v",
+				"internal error when setting mise env var '%s': %w",
 				name, err,
 			)
 		}
@@ -73,6 +77,7 @@ func Init(ctx context.Context) error {
 	if _, err := RunCommand(ctx, []string{consts.MiseBinPath, "trust", consts.MiseConfigFileName}); err != nil {
 		return fmt.Errorf("running mise trust: %w", err)
 	}
+
 	if _, err := RunCommand(ctx, []string{consts.MiseBinPath, "install"}); err != nil {
 		return fmt.Errorf("running mise install: %w", err)
 	}
@@ -90,7 +95,10 @@ func Init(ctx context.Context) error {
 // parse it on their own.
 func RunCommand(ctx context.Context, cmdArgs []string) (string, error) {
 	if len(cmdArgs) <= 1 {
-		return "", fmt.Errorf("internal error: not enough arguments passed to RunCommand() -- received: %v", cmdArgs)
+		return "", fmt.Errorf(
+			"internal error: not enough arguments passed to RunCommand() -- received: %v",
+			cmdArgs,
+		)
 	}
 
 	var args []string
@@ -102,6 +110,7 @@ func RunCommand(ctx context.Context, cmdArgs []string) (string, error) {
 
 	cmd := exec.CommandContext(ctx, consts.MiseBinPath, args...)
 	iprint.Debugf("Running '%v'\n", cmd.Args)
+
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return "", fmt.Errorf(
@@ -136,10 +145,10 @@ func GetFileTypeListerCommand(fileType string) string {
 // [mise]: https://mise.jdx.dev
 func installMise(_ context.Context) (err error) {
 	miseFound := true
-	_, err = os.Stat(consts.MiseBinPath)
-	if err != nil {
+
+	if _, statErr := os.Stat(consts.MiseBinPath); statErr != nil {
 		iprint.Debugf("error when running os.Stat(consts.MiseBinPath): %w\n", err)
-		if os.IsNotExist(err) {
+		if os.IsNotExist(statErr) {
 			miseFound = false
 			iprint.Debugf("mise not found, will install\n")
 		} else {
@@ -172,13 +181,14 @@ func installMise(_ context.Context) (err error) {
 
 	miseReleaseURL := fmt.Sprintf(
 		"https://github.com/jdx/mise/releases/download/%s/mise-%s-%s-%s",
-		consts.MiseVersion, consts.MiseVersion, host.Kernel, host.Arch,
+		miseVersion, miseVersion, host.Kernel, host.Arch,
 	)
 
 	out, err := os.Create(consts.MiseBinPath)
 	if err != nil {
 		return fmt.Errorf("creating mise target file: %w", err)
 	}
+
 	defer func() {
 		if closeErr := out.Close(); closeErr != nil {
 			err = errors.Join(err, fmt.Errorf("closing mise target file: %w", closeErr))
@@ -190,6 +200,7 @@ func installMise(_ context.Context) (err error) {
 	if err != nil {
 		return fmt.Errorf("making GET request for mise GitHub Release: %w", err)
 	}
+
 	defer func() {
 		if closeErr := resp.Body.Close(); closeErr != nil {
 			err = errors.Join(err, fmt.Errorf("closing response body: %w", closeErr))
@@ -204,7 +215,7 @@ func installMise(_ context.Context) (err error) {
 		return fmt.Errorf("writing mise data to target: %w", err)
 	}
 
-	if err := os.Chmod(consts.MiseBinPath, 0755); err != nil {
+	if err := os.Chmod(consts.MiseBinPath, 0o755); err != nil {
 		return fmt.Errorf("changing mise binary to be executable: %w", err)
 	}
 
@@ -225,6 +236,7 @@ func FilesExistInTree(ctx context.Context, findScript string) (bool, error) {
 		if strings.Contains(string(output), "No such file or directory") {
 			return false, nil
 		}
+
 		return false, fmt.Errorf("finding files: %w -- output:\n%s", err, string(output))
 	}
 

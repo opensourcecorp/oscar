@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	// ANSI color codes
+	// ANSI color codes.
 	reset   = "\033[0m"
 	red     = "\033[31m"
 	green   = "\033[32m"
@@ -83,6 +83,7 @@ func color(ansiCode string) string {
 	if !term.IsTerminal(int(os.Stdout.Fd())) {
 		return ""
 	}
+
 	if noColor := os.Getenv(consts.OscarEnvVarNoColor); noColor != "" {
 		return ""
 	}

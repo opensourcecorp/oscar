@@ -28,21 +28,27 @@ func (repo Repo) String() string {
 	if repo.HasGo {
 		out += "- Go\n"
 	}
+
 	if repo.HasPython {
 		out += "- Python\n"
 	}
+
 	if repo.HasShell {
 		out += "- Shell (sh, bash, etc.)\n"
 	}
+
 	if repo.HasTerraform {
 		out += "- Terraform\n"
 	}
+
 	if repo.HasContainerfile {
 		out += "- Containerfile\n"
 	}
+
 	if repo.HasYaml {
 		out += "- YAML\n"
 	}
+
 	if repo.HasMarkdown {
 		out += "- Markdown\n"
 	}

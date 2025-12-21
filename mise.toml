@@ -5,7 +5,7 @@ jobs = 4
 [tools]
 buf = "1.57.2"
 github-cli = "2.79.0"
-go = "1.25.1"
+go = "1.25.3"
 hadolint = "2.13.1"
 markdownlint-cli2 = "0.18.1"
 # required for markdownlint-cli2
@@ -22,12 +22,9 @@ yamlfmt = "0.17.2"
 yamllint = "1.37.1"
 
 ### Go-specific tools, for oscar or its development
-"go:github.com/kisielk/errcheck" = { version = "1.9.0" }
-"go:github.com/mgechev/revive" = { version = "1.12.0" }
-"go:golang.org/x/tools/cmd/goimports" = { version = "0.37.0" }
+"github:golangci/golangci-lint" = { version = "2.6.2" }
 "go:golang.org/x/vuln/cmd/govulncheck" = { version = "1.1.4" }
 "go:google.golang.org/protobuf/cmd/protoc-gen-go" = { version = "1.36.8" }
-"go:honnef.co/go/tools/cmd/staticcheck" = { version = "2025.1.1" }
 
 ### Python-specific tools. Note that others that may also be CLI tools, may be run internally via
 ### `uvx` instead.

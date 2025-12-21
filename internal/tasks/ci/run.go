@@ -20,9 +20,10 @@ import (
 	taskutil "github.com/opensourcecorp/oscar/internal/tasks/util"
 )
 
-// getCITaskMap assembles the overall list of CI tasks, keyed by their language/tooling name
+// getCITaskMap assembles the overall list of CI tasks, keyed by their language/tooling name.
 func getCITaskMap(repo taskutil.Repo) (taskutil.TaskMap, error) {
 	out := make(taskutil.TaskMap)
+
 	for langName, getTasksFunc := range map[string]func(taskutil.Repo) []taskutil.Tasker{
 		"Versioning": versiontools.NewTasksForCI,
 		"Go":         gotools.NewTasksForCI,
@@ -73,19 +74,23 @@ func Run(ctx context.Context) (err error) {
 		tasks := taskMap[lang]
 
 		run.PrintTaskMapBanner(lang)
+
 		for _, task := range tasks {
 			taskStartTime := time.Now()
+
 			run.PrintTaskBanner(task)
 
 			// NOTE: this error is checked later, when we can check the Run, Post, and git-diff
 			// potential errors together
 			var runErr error
+
 			runErr = errors.Join(runErr, task.Exec(ctx))
 			runErr = errors.Join(runErr, task.Post(ctx))
 
 			if err := gitCI.Update(ctx); err != nil {
 				return fmt.Errorf("internal error: %w", err)
 			}
+
 			gitStatusHasChanged, err := gitCI.StatusHasChanged(ctx)
 			if err != nil {
 				return fmt.Errorf("internal error: %w", err)
