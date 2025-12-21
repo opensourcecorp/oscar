@@ -1,5 +1,6 @@
 ---
 version: "1.0.0"
+
 deliverables:
   go_github_release:
     build_sources:
@@ -9,3 +10,9 @@ deliverables:
     registry: "ghcr.io"
     namespace: "opensourcecorp"
     name: "oscar"
+
+deployables:
+  terraform:
+    dev:
+      module_root_dirs:
+        - "./infracode/dev"

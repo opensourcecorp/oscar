@@ -7,13 +7,12 @@
 package oscarcfgpbv1
 
 import (
-	reflect "reflect"
-	sync "sync"
-	unsafe "unsafe"
-
 	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	reflect "reflect"
+	sync "sync"
+	unsafe "unsafe"
 )
 
 const (
@@ -31,7 +30,9 @@ type Config struct {
 	// Example: "1.0.0"
 	Version string `protobuf:"bytes,1,opt,name=version,proto3" json:"version,omitempty"`
 	// Deliverables is the collection of possible deliverable artifacts.
-	Deliverables  *Deliverables `protobuf:"bytes,2,opt,name=deliverables,proto3" json:"deliverables,omitempty"`
+	Deliverables *Deliverables `protobuf:"bytes,2,opt,name=deliverables,proto3" json:"deliverables,omitempty"`
+	// Deployables is the collection of possible deployable artifacts.
+	Deployables   *Deployables `protobuf:"bytes,3,opt,name=deployables,proto3" json:"deployables,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -76,6 +77,13 @@ func (x *Config) GetVersion() string {
 func (x *Config) GetDeliverables() *Deliverables {
 	if x != nil {
 		return x.Deliverables
+	}
+	return nil
+}
+
+func (x *Config) GetDeployables() *Deployables {
+	if x != nil {
+		return x.Deployables
 	}
 	return nil
 }
@@ -135,6 +143,52 @@ func (x *Deliverables) GetContainerImage() *ContainerImage {
 	return nil
 }
 
+// Deployables contains a field for each possible deployable.
+type Deployables struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// See [Terraform].
+	Terraform     *Terraform `protobuf:"bytes,1,opt,name=terraform,proto3" json:"terraform,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Deployables) Reset() {
+	*x = Deployables{}
+	mi := &file_opensourcecorp_oscar_config_v1_config_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Deployables) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Deployables) ProtoMessage() {}
+
+func (x *Deployables) ProtoReflect() protoreflect.Message {
+	mi := &file_opensourcecorp_oscar_config_v1_config_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Deployables.ProtoReflect.Descriptor instead.
+func (*Deployables) Descriptor() ([]byte, []int) {
+	return file_opensourcecorp_oscar_config_v1_config_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *Deployables) GetTerraform() *Terraform {
+	if x != nil {
+		return x.Terraform
+	}
+	return nil
+}
+
 // GoGitHubRelease defines the arguments necessary to create GitHub Releases for Go binaries.
 type GoGitHubRelease struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -153,7 +207,7 @@ type GoGitHubRelease struct {
 
 func (x *GoGitHubRelease) Reset() {
 	*x = GoGitHubRelease{}
-	mi := &file_opensourcecorp_oscar_config_v1_config_proto_msgTypes[2]
+	mi := &file_opensourcecorp_oscar_config_v1_config_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -165,7 +219,7 @@ func (x *GoGitHubRelease) String() string {
 func (*GoGitHubRelease) ProtoMessage() {}
 
 func (x *GoGitHubRelease) ProtoReflect() protoreflect.Message {
-	mi := &file_opensourcecorp_oscar_config_v1_config_proto_msgTypes[2]
+	mi := &file_opensourcecorp_oscar_config_v1_config_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -178,7 +232,7 @@ func (x *GoGitHubRelease) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GoGitHubRelease.ProtoReflect.Descriptor instead.
 func (*GoGitHubRelease) Descriptor() ([]byte, []int) {
-	return file_opensourcecorp_oscar_config_v1_config_proto_rawDescGZIP(), []int{2}
+	return file_opensourcecorp_oscar_config_v1_config_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *GoGitHubRelease) GetBuildSources() []string {
@@ -217,7 +271,7 @@ type ContainerImage struct {
 
 func (x *ContainerImage) Reset() {
 	*x = ContainerImage{}
-	mi := &file_opensourcecorp_oscar_config_v1_config_proto_msgTypes[3]
+	mi := &file_opensourcecorp_oscar_config_v1_config_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -229,7 +283,7 @@ func (x *ContainerImage) String() string {
 func (*ContainerImage) ProtoMessage() {}
 
 func (x *ContainerImage) ProtoReflect() protoreflect.Message {
-	mi := &file_opensourcecorp_oscar_config_v1_config_proto_msgTypes[3]
+	mi := &file_opensourcecorp_oscar_config_v1_config_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -242,7 +296,7 @@ func (x *ContainerImage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ContainerImage.ProtoReflect.Descriptor instead.
 func (*ContainerImage) Descriptor() ([]byte, []int) {
-	return file_opensourcecorp_oscar_config_v1_config_proto_rawDescGZIP(), []int{3}
+	return file_opensourcecorp_oscar_config_v1_config_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ContainerImage) GetRegistry() string {
@@ -266,24 +320,137 @@ func (x *ContainerImage) GetName() string {
 	return ""
 }
 
+type Terraform struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Dev           *TerraformEnv          `protobuf:"bytes,1,opt,name=dev,proto3" json:"dev,omitempty"`
+	Nonprod       *TerraformEnv          `protobuf:"bytes,2,opt,name=nonprod,proto3" json:"nonprod,omitempty"`
+	Prod          *TerraformEnv          `protobuf:"bytes,3,opt,name=prod,proto3" json:"prod,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Terraform) Reset() {
+	*x = Terraform{}
+	mi := &file_opensourcecorp_oscar_config_v1_config_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Terraform) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Terraform) ProtoMessage() {}
+
+func (x *Terraform) ProtoReflect() protoreflect.Message {
+	mi := &file_opensourcecorp_oscar_config_v1_config_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Terraform.ProtoReflect.Descriptor instead.
+func (*Terraform) Descriptor() ([]byte, []int) {
+	return file_opensourcecorp_oscar_config_v1_config_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *Terraform) GetDev() *TerraformEnv {
+	if x != nil {
+		return x.Dev
+	}
+	return nil
+}
+
+func (x *Terraform) GetNonprod() *TerraformEnv {
+	if x != nil {
+		return x.Nonprod
+	}
+	return nil
+}
+
+func (x *Terraform) GetProd() *TerraformEnv {
+	if x != nil {
+		return x.Prod
+	}
+	return nil
+}
+
+type TerraformEnv struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	ModuleRootDirs []string               `protobuf:"bytes,1,rep,name=module_root_dirs,json=moduleRootDirs,proto3" json:"module_root_dirs,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *TerraformEnv) Reset() {
+	*x = TerraformEnv{}
+	mi := &file_opensourcecorp_oscar_config_v1_config_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TerraformEnv) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TerraformEnv) ProtoMessage() {}
+
+func (x *TerraformEnv) ProtoReflect() protoreflect.Message {
+	mi := &file_opensourcecorp_oscar_config_v1_config_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TerraformEnv.ProtoReflect.Descriptor instead.
+func (*TerraformEnv) Descriptor() ([]byte, []int) {
+	return file_opensourcecorp_oscar_config_v1_config_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *TerraformEnv) GetModuleRootDirs() []string {
+	if x != nil {
+		return x.ModuleRootDirs
+	}
+	return nil
+}
+
 var File_opensourcecorp_oscar_config_v1_config_proto protoreflect.FileDescriptor
 
 const file_opensourcecorp_oscar_config_v1_config_proto_rawDesc = "" +
 	"\n" +
-	"+opensourcecorp/oscar/config/v1/config.proto\x12\x1eopensourcecorp.oscar.config.v1\x1a\x1bbuf/validate/validate.proto\"\xb6\x01\n" +
+	"+opensourcecorp/oscar/config/v1/config.proto\x12\x1eopensourcecorp.oscar.config.v1\x1a\x1bbuf/validate/validate.proto\"\x85\x02\n" +
 	"\x06Config\x12Z\n" +
 	"\aversion\x18\x01 \x01(\tB@\xbaH=r;29^[0-9]+\\.[0-9]+\\.[0-9]+(-[a-zA-Z0-9]+)?(\\+[a-zA-Z0-9]+)?$R\aversion\x12P\n" +
-	"\fdeliverables\x18\x02 \x01(\v2,.opensourcecorp.oscar.config.v1.DeliverablesR\fdeliverables\"\xc4\x01\n" +
+	"\fdeliverables\x18\x02 \x01(\v2,.opensourcecorp.oscar.config.v1.DeliverablesR\fdeliverables\x12M\n" +
+	"\vdeployables\x18\x03 \x01(\v2+.opensourcecorp.oscar.config.v1.DeployablesR\vdeployables\"\xc4\x01\n" +
 	"\fDeliverables\x12[\n" +
 	"\x11go_github_release\x18\x01 \x01(\v2/.opensourcecorp.oscar.config.v1.GoGitHubReleaseR\x0fgoGithubRelease\x12W\n" +
-	"\x0fcontainer_image\x18\x02 \x01(\v2..opensourcecorp.oscar.config.v1.ContainerImageR\x0econtainerImage\"T\n" +
+	"\x0fcontainer_image\x18\x02 \x01(\v2..opensourcecorp.oscar.config.v1.ContainerImageR\x0econtainerImage\"V\n" +
+	"\vDeployables\x12G\n" +
+	"\tterraform\x18\x01 \x01(\v2).opensourcecorp.oscar.config.v1.TerraformR\tterraform\"T\n" +
 	"\x0fGoGitHubRelease\x12+\n" +
 	"\rbuild_sources\x18\x01 \x03(\tB\x06\xbaH\x03\xc8\x01\x01R\fbuildSources\x12\x14\n" +
 	"\x05draft\x18\x02 \x01(\bR\x05draft\"v\n" +
 	"\x0eContainerImage\x12\"\n" +
 	"\bregistry\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\bregistry\x12$\n" +
 	"\tnamespace\x18\x02 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\tnamespace\x12\x1a\n" +
-	"\x04name\x18\x03 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x04nameB`Z^github.com/opensourcecorp/oscar/internal/generated/opensourcecorp/oscar/config/v1;oscarcfgpbv1b\x06proto3"
+	"\x04name\x18\x03 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x04name\"\xdd\x01\n" +
+	"\tTerraform\x12F\n" +
+	"\x03dev\x18\x01 \x01(\v2,.opensourcecorp.oscar.config.v1.TerraformEnvB\x06\xbaH\x03\xc8\x01\x01R\x03dev\x12F\n" +
+	"\anonprod\x18\x02 \x01(\v2,.opensourcecorp.oscar.config.v1.TerraformEnvR\anonprod\x12@\n" +
+	"\x04prod\x18\x03 \x01(\v2,.opensourcecorp.oscar.config.v1.TerraformEnvR\x04prod\"B\n" +
+	"\fTerraformEnv\x122\n" +
+	"\x10module_root_dirs\x18\x01 \x03(\tB\b\xbaH\x05\x92\x01\x02\b\x01R\x0emoduleRootDirsB`Z^github.com/opensourcecorp/oscar/internal/generated/opensourcecorp/oscar/config/v1;oscarcfgpbv1b\x06proto3"
 
 var (
 	file_opensourcecorp_oscar_config_v1_config_proto_rawDescOnce sync.Once
@@ -297,22 +464,30 @@ func file_opensourcecorp_oscar_config_v1_config_proto_rawDescGZIP() []byte {
 	return file_opensourcecorp_oscar_config_v1_config_proto_rawDescData
 }
 
-var file_opensourcecorp_oscar_config_v1_config_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_opensourcecorp_oscar_config_v1_config_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_opensourcecorp_oscar_config_v1_config_proto_goTypes = []any{
 	(*Config)(nil),          // 0: opensourcecorp.oscar.config.v1.Config
 	(*Deliverables)(nil),    // 1: opensourcecorp.oscar.config.v1.Deliverables
-	(*GoGitHubRelease)(nil), // 2: opensourcecorp.oscar.config.v1.GoGitHubRelease
-	(*ContainerImage)(nil),  // 3: opensourcecorp.oscar.config.v1.ContainerImage
+	(*Deployables)(nil),     // 2: opensourcecorp.oscar.config.v1.Deployables
+	(*GoGitHubRelease)(nil), // 3: opensourcecorp.oscar.config.v1.GoGitHubRelease
+	(*ContainerImage)(nil),  // 4: opensourcecorp.oscar.config.v1.ContainerImage
+	(*Terraform)(nil),       // 5: opensourcecorp.oscar.config.v1.Terraform
+	(*TerraformEnv)(nil),    // 6: opensourcecorp.oscar.config.v1.TerraformEnv
 }
 var file_opensourcecorp_oscar_config_v1_config_proto_depIdxs = []int32{
 	1, // 0: opensourcecorp.oscar.config.v1.Config.deliverables:type_name -> opensourcecorp.oscar.config.v1.Deliverables
-	2, // 1: opensourcecorp.oscar.config.v1.Deliverables.go_github_release:type_name -> opensourcecorp.oscar.config.v1.GoGitHubRelease
-	3, // 2: opensourcecorp.oscar.config.v1.Deliverables.container_image:type_name -> opensourcecorp.oscar.config.v1.ContainerImage
-	3, // [3:3] is the sub-list for method output_type
-	3, // [3:3] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	2, // 1: opensourcecorp.oscar.config.v1.Config.deployables:type_name -> opensourcecorp.oscar.config.v1.Deployables
+	3, // 2: opensourcecorp.oscar.config.v1.Deliverables.go_github_release:type_name -> opensourcecorp.oscar.config.v1.GoGitHubRelease
+	4, // 3: opensourcecorp.oscar.config.v1.Deliverables.container_image:type_name -> opensourcecorp.oscar.config.v1.ContainerImage
+	5, // 4: opensourcecorp.oscar.config.v1.Deployables.terraform:type_name -> opensourcecorp.oscar.config.v1.Terraform
+	6, // 5: opensourcecorp.oscar.config.v1.Terraform.dev:type_name -> opensourcecorp.oscar.config.v1.TerraformEnv
+	6, // 6: opensourcecorp.oscar.config.v1.Terraform.nonprod:type_name -> opensourcecorp.oscar.config.v1.TerraformEnv
+	6, // 7: opensourcecorp.oscar.config.v1.Terraform.prod:type_name -> opensourcecorp.oscar.config.v1.TerraformEnv
+	8, // [8:8] is the sub-list for method output_type
+	8, // [8:8] is the sub-list for method input_type
+	8, // [8:8] is the sub-list for extension type_name
+	8, // [8:8] is the sub-list for extension extendee
+	0, // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_opensourcecorp_oscar_config_v1_config_proto_init() }
@@ -326,7 +501,7 @@ func file_opensourcecorp_oscar_config_v1_config_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_opensourcecorp_oscar_config_v1_config_proto_rawDesc), len(file_opensourcecorp_oscar_config_v1_config_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   4,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

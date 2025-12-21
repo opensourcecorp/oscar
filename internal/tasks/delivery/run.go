@@ -13,6 +13,7 @@ import (
 	containertools "github.com/opensourcecorp/oscar/internal/tasks/tools/containers"
 	gittagtools "github.com/opensourcecorp/oscar/internal/tasks/tools/gittag"
 	gotools "github.com/opensourcecorp/oscar/internal/tasks/tools/go"
+	tftools "github.com/opensourcecorp/oscar/internal/tasks/tools/terraform"
 	taskutil "github.com/opensourcecorp/oscar/internal/tasks/util"
 )
 
@@ -26,7 +27,7 @@ func getDeliveryTaskMap(repo taskutil.Repo) (taskutil.TaskMap, error) {
 		"Go":                 gotools.NewTasksForDelivery,
 		"OCI Images":         containertools.NewTasksForDelivery,
 		// "Python":     pytools.NewTasksForDelivery,
-		// "Terraform":     tftools.NewTasksForDelivery,
+		"Terraform": tftools.NewTasksForDelivery,
 		// "Markdown":      mdtools.NewTasksForDelivery,
 	} {
 		tasks, err := getTasksFunc(repo)

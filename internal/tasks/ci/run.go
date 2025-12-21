@@ -15,6 +15,7 @@ import (
 	mdtools "github.com/opensourcecorp/oscar/internal/tasks/tools/markdown"
 	pytools "github.com/opensourcecorp/oscar/internal/tasks/tools/python"
 	shtools "github.com/opensourcecorp/oscar/internal/tasks/tools/shell"
+	tftools "github.com/opensourcecorp/oscar/internal/tasks/tools/terraform"
 	versiontools "github.com/opensourcecorp/oscar/internal/tasks/tools/version"
 	yamltools "github.com/opensourcecorp/oscar/internal/tasks/tools/yaml"
 	taskutil "github.com/opensourcecorp/oscar/internal/tasks/util"
@@ -24,10 +25,10 @@ import (
 func getCITaskMap(repo taskutil.Repo) (taskutil.TaskMap, error) {
 	out := make(taskutil.TaskMap)
 	for langName, getTasksFunc := range map[string]func(taskutil.Repo) []taskutil.Tasker{
-		"Versioning": versiontools.NewTasksForCI,
-		"Go":         gotools.NewTasksForCI,
-		"Python":     pytools.NewTasksForCI,
-		// "Terraform":     tftools.NewTasksForCI,
+		"Versioning":    versiontools.NewTasksForCI,
+		"Go":            gotools.NewTasksForCI,
+		"Python":        pytools.NewTasksForCI,
+		"Terraform":     tftools.NewTasksForCI,
 		"YAML":          yamltools.NewTasksForCI,
 		"Containerfile": containertools.NewTasksForCI,
 		"Shell":         shtools.NewTasksForCI,

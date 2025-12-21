@@ -14,6 +14,8 @@ message Config {
   string version = 1 [(buf.validate.field).string.pattern = "^[0-9]+\\.[0-9]+\\.[0-9]+(-[a-zA-Z0-9]+)?(\\+[a-zA-Z0-9]+)?$"];
   // Deliverables is the collection of possible deliverable artifacts.
   Deliverables deliverables = 2;
+  // Deployables is the collection of possible deployable artifacts.
+  Deployables deployables = 3;
 }
 
 // Deliverables contains a field for each possible deliverable.
@@ -22,6 +24,12 @@ message Deliverables {
   GoGitHubRelease go_github_release = 1;
   // See [ContainerImage].
   ContainerImage container_image = 2;
+}
+
+// Deployables contains a field for each possible deployable.
+message Deployables {
+  // See [Terraform].
+  Terraform terraform = 1;
 }
 
 // GoGitHubRelease defines the arguments necessary to create GitHub Releases for Go binaries.
@@ -52,4 +60,14 @@ message ContainerImage {
   //
   // Example: "oscar"
   string name = 3 [(buf.validate.field).required = true];
+}
+
+message Terraform {
+  TerraformEnv dev = 1 [(buf.validate.field).required = true];
+  TerraformEnv nonprod = 2;
+  TerraformEnv prod = 3;
+}
+
+message TerraformEnv {
+  repeated string module_root_dirs = 1 [(buf.validate.field).repeated.min_items = 1];
 }
