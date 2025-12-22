@@ -1,4 +1,4 @@
-// Package main
+// Package main is // TODO: .
 package main
 
 import "fmt"

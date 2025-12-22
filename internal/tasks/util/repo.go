@@ -19,46 +19,6 @@ type Repo struct {
 	HasMarkdown      bool
 }
 
-// String implements the [fmt.Stringer] interface.
-func (repo Repo) String() string {
-	var out string
-
-	out += "The following file types were found in this repo, and tasks will be run against them:\n"
-
-	if repo.HasGo {
-		out += "- Go\n"
-	}
-
-	if repo.HasPython {
-		out += "- Python\n"
-	}
-
-	if repo.HasShell {
-		out += "- Shell (sh, bash, etc.)\n"
-	}
-
-	if repo.HasTerraform {
-		out += "- Terraform\n"
-	}
-
-	if repo.HasContainerfile {
-		out += "- Containerfile\n"
-	}
-
-	if repo.HasYaml {
-		out += "- YAML\n"
-	}
-
-	if repo.HasMarkdown {
-		out += "- Markdown\n"
-	}
-
-	// One more newline for padding
-	out += "\n"
-
-	return out
-}
-
 // NewRepo returns a populated [Repo].
 func NewRepo(ctx context.Context) (Repo, error) {
 	var errs error
@@ -114,4 +74,44 @@ func NewRepo(ctx context.Context) (Repo, error) {
 	iprint.Debugf("repo composition: %+v\n", repo)
 
 	return repo, nil
+}
+
+// String implements the [fmt.Stringer] interface.
+func (repo Repo) String() string {
+	var out string
+
+	out += "The following file types were found in this repo, and tasks will be run against them:\n"
+
+	if repo.HasGo {
+		out += "- Go\n"
+	}
+
+	if repo.HasPython {
+		out += "- Python\n"
+	}
+
+	if repo.HasShell {
+		out += "- Shell (sh, bash, etc.)\n"
+	}
+
+	if repo.HasTerraform {
+		out += "- Terraform\n"
+	}
+
+	if repo.HasContainerfile {
+		out += "- Containerfile\n"
+	}
+
+	if repo.HasYaml {
+		out += "- YAML\n"
+	}
+
+	if repo.HasMarkdown {
+		out += "- Markdown\n"
+	}
+
+	// One more newline for padding.
+	out += "\n"
+
+	return out
 }

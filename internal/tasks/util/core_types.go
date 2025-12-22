@@ -8,27 +8,32 @@ import (
 	iprint "github.com/opensourcecorp/oscar/internal/print"
 )
 
-// Tasker defines the method set for working with metadata for a given CI Task.
-type Tasker interface {
-	// InfoText should return a human-readable display string that describes the task, e.g. "Run
-	// tests".
-	InfoText() string
-	// Exec should perform the actual task's actions.
-	Exec(ctx context.Context) error
-	// Post should perform any post-run actions for the task, if necessary.
-	Post(ctx context.Context) error
-}
+type (
+	// Tasker defines the method set for working with metadata for a given CI Task.
+	Tasker interface {
+		// InfoText should return a human-readable display string that describes the task, e.g. "Run
+		// tests".
+		InfoText() string
+		// Exec should perform the actual task's actions.
+		Exec(ctx context.Context) error
+		// Post should perform any post-run actions for the task, if necessary.
+		Post(ctx context.Context) error
+	}
 
-// A Tool defines information about a tool used for running oscar's tasks. A Tool should be defined
-// if a language etc. cannot perform the task itself. For example, you would not need a Tool to
-// represent a task that runs "go test", but you *would* need a tool to represent a task that runs
-// the external "staticcheck" linter for Go.
-type Tool struct {
-	// The list of command & arguments to run during [Tasker.Exec].
-	RunArgs []string
-	// The path to the tool's config file, if it has one to use.
-	ConfigFilePath string
-}
+	// A Tool defines information about a tool used for running oscar's tasks. A Tool should be
+	// defined if a language etc. cannot perform the task itself. For example, you would not need a
+	// Tool to represent a task that runs "go test", but you *would* need a tool to represent a task
+	// that runs the external "staticcheck" linter for Go.
+	Tool struct {
+		// The list of command & arguments to run during [Tasker.Exec].
+		RunArgs []string
+		// The path to the tool's config file, if it has one to use.
+		ConfigFilePath string
+	}
+
+	// TaskMap aliases a map of a Task's language/tooling name to its list of Tasks.
+	TaskMap map[string][]Tasker
+)
 
 // RenderRunCommandArgs uses [Tool.RunArgs] and does naive templating to replace certain values
 // before being used.
@@ -48,9 +53,6 @@ func (t Tool) RenderRunCommandArgs() []string {
 
 	return out
 }
-
-// TaskMap aliases a map of a Task's language/tooling name to its list of Tasks.
-type TaskMap map[string][]Tasker
 
 // SortedKeys sorts the keys of the [TaskMap]. Useful for iterating through Tasks in a predictable
 // order during runs.

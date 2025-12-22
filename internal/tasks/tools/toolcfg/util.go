@@ -11,12 +11,12 @@ import (
 // SetupConfigFile handles reading a Tool's config file from the embedded filesystem, and writing it
 // to its target location.
 func SetupConfigFile(t taskutil.Tool) error {
-	cfgFileContents, err := Files.ReadFile(filepath.Base(t.ConfigFilePath))
-	if err != nil {
-		return fmt.Errorf("reading embedded file contents: %w", err)
+	cfgFileContents, readErr := Files.ReadFile(filepath.Base(t.ConfigFilePath))
+	if readErr != nil {
+		return fmt.Errorf("reading embedded file contents: %w", readErr)
 	}
 
-	if err := os.WriteFile(t.ConfigFilePath, cfgFileContents, 0644); err != nil {
+	if err := os.WriteFile(t.ConfigFilePath, cfgFileContents, 0600); err != nil {
 		return fmt.Errorf("writing config file: %w", err)
 	}
 

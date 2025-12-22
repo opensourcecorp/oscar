@@ -78,7 +78,7 @@ func (t goModCheck) InfoText() string { return "go.mod tidy check" }
 // Exec implements [taskutil.Tasker.Exec].
 func (t goModCheck) Exec(ctx context.Context) error {
 	if _, err := system.RunCommand(ctx, t.RunArgs); err != nil {
-		return err
+		return fmt.Errorf("running go mod check: %w", err)
 	}
 
 	return nil
@@ -93,7 +93,7 @@ func (t generateCodeCI) InfoText() string { return "Generate code" }
 // Exec implements [taskutil.Tasker.Exec].
 func (t generateCodeCI) Exec(ctx context.Context) error {
 	if _, err := system.RunCommand(ctx, t.RunArgs); err != nil {
-		return err
+		return fmt.Errorf("running codegen: %w", err)
 	}
 
 	// Generating code will likely throw diffs if not also addressing other formatting CI checks, so
@@ -120,7 +120,7 @@ func (t goBuildCI) InfoText() string { return "Build" }
 // Exec implements [taskutil.Tasker.Exec].
 func (t goBuildCI) Exec(ctx context.Context) error {
 	if _, err := system.RunCommand(ctx, t.RunArgs); err != nil {
-		return err
+		return fmt.Errorf("running go build: %w", err)
 	}
 
 	return nil
@@ -134,13 +134,12 @@ func (t golangciFmt) InfoText() string { return "Format (golangci-lint)" }
 
 // Exec implements [taskutil.Tasker.Exec].
 func (t golangciFmt) Exec(ctx context.Context) error {
-	err := toolcfg.SetupConfigFile(t.Tool)
-	if err != nil {
-		return err
+	if err := toolcfg.SetupConfigFile(t.Tool); err != nil {
+		return fmt.Errorf("setting up golangci-lint config file: %w", err)
 	}
 
 	if _, err := system.RunCommand(ctx, t.RenderRunCommandArgs()); err != nil {
-		return err
+		return fmt.Errorf("running golangci-lint fmt: %w", err)
 	}
 
 	return nil
@@ -148,8 +147,7 @@ func (t golangciFmt) Exec(ctx context.Context) error {
 
 // Post implements [taskutil.Tasker.Post].
 func (t golangciFmt) Post(_ context.Context) error {
-	err := os.RemoveAll(t.ConfigFilePath)
-	if err != nil {
+	if err := os.RemoveAll(t.ConfigFilePath); err != nil {
 		return fmt.Errorf("removing config file: %w", err)
 	}
 
@@ -161,13 +159,12 @@ func (t golangciLint) InfoText() string { return "Lint (golangci-lint)" }
 
 // Exec implements [taskutil.Tasker.Exec].
 func (t golangciLint) Exec(ctx context.Context) error {
-	err := toolcfg.SetupConfigFile(t.Tool)
-	if err != nil {
-		return err
+	if err := toolcfg.SetupConfigFile(t.Tool); err != nil {
+		return fmt.Errorf("setting up golangci-lint config file: %w", err)
 	}
 
 	if _, err := system.RunCommand(ctx, t.RenderRunCommandArgs()); err != nil {
-		return err
+		return fmt.Errorf("running golangci-lint run: %w", err)
 	}
 
 	return nil
@@ -189,7 +186,7 @@ func (t govulncheck) InfoText() string { return "Vulnerability scan (govulncheck
 // Exec implements [taskutil.Tasker.Exec].
 func (t govulncheck) Exec(ctx context.Context) error {
 	if _, err := system.RunCommand(ctx, t.RunArgs); err != nil {
-		return err
+		return fmt.Errorf("running govulncheck: %w", err)
 	}
 
 	return nil
@@ -204,7 +201,7 @@ func (t goTest) InfoText() string { return "Tests" }
 // Exec implements [taskutil.Tasker.Exec].
 func (t goTest) Exec(ctx context.Context) error {
 	if _, err := system.RunCommand(ctx, t.RunArgs); err != nil {
-		return err
+		return fmt.Errorf("running go test: %w", err)
 	}
 
 	return nil

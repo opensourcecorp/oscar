@@ -54,11 +54,11 @@ func (t yamllint) InfoText() string { return "Lint (yamllint)" }
 // Exec implements [taskutil.Tasker.Exec].
 func (t yamllint) Exec(ctx context.Context) error {
 	if err := toolcfg.SetupConfigFile(t.Tool); err != nil {
-		return err
+		return fmt.Errorf("setting up yamllint config file: %w", err)
 	}
 
 	if _, err := system.RunCommand(ctx, t.RenderRunCommandArgs()); err != nil {
-		return err
+		return fmt.Errorf("running yamllint: %w", err)
 	}
 
 	return nil
@@ -73,11 +73,11 @@ func (t yamlfmt) InfoText() string { return "Format (yamlfmt)" }
 // Exec implements [taskutil.Tasker.Exec].
 func (t yamlfmt) Exec(ctx context.Context) error {
 	if err := toolcfg.SetupConfigFile(t.Tool); err != nil {
-		return err
+		return fmt.Errorf("setting up yamlfmt config file: %w", err)
 	}
 
 	if _, err := system.RunCommand(ctx, t.RenderRunCommandArgs()); err != nil {
-		return err
+		return fmt.Errorf("running yamlfmt: %w", err)
 	}
 
 	return nil

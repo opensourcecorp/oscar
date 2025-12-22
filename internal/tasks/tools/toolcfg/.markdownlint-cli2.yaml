@@ -1,6 +1,9 @@
 ---
 config:
   default: true
+  # NOTE: see comment in markdownlint-cli2's Exec() Go method for why this can't be here
+  # globs:
+  #   - "#**/*venv*/**/*.md"
   MD013:
     line_length: 100
     code_blocks: false

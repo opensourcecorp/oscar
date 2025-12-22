@@ -6,120 +6,207 @@ linters:
   # Disable all so we can then enable just the ones we want
   default: "none"
   enable:
-    # - "arangolint"
-    # - "asasalint"
-    # - "asciicheck"
-    # - "bidichk"
-    # - "bodyclose"
-    # - "canonicalheader"
-    # - "containedctx"
-    # - "contextcheck"
-    # - "copyloopvar"
-    # - "cyclop"
-    # - "decorder"
+    - "asasalint"
+    - "asciicheck"
+    - "bidichk"
+    - "bodyclose"
+    - "canonicalheader"
+    - "containedctx"
+    - "contextcheck"
+    - "copyloopvar"
+    - "decorder"
+    # TODO: This would be good if we want to e.g. enforce nonusage of a deprecated package
     # - "depguard"
-    # - "dogsled"
-    # - "dupl"
-    # - "dupword"
-    # - "durationcheck"
-    # - "embeddedstructfieldcheck"
+    - "dogsled"
+    - "dupl"
+    - "durationcheck"
+    - "embeddedstructfieldcheck"
+    # TODO: eventually.
     # - "err113"
     - "errcheck"
-    # - "errchkjson"
-    # - "errname"
-    # - "errorlint"
-    # - "exhaustive"
+    - "errchkjson"
+    - "errname"
+    - "errorlint"
+    - "exhaustive"
+    # TODO: enable?
     # - "exhaustruct"
-    # - "exptostd"
-    # - "fatcontext"
-    # - "forbidigo"
+    - "exptostd"
+    - "fatcontext"
+    # TODO: enable
     # - "forcetypeassert"
-    # - "funcorder"
-    # - "funlen"
-    # - "ginkgolinter"
-    # - "gocheckcompilerdirectives"
-    # - "gochecknoglobals"
-    # - "gochecknoinits"
-    # - "gochecksumtype"
+    - "funcorder"
+    - "gocheckcompilerdirectives"
+    - "gochecknoinits"
+    # TODO: enable?
     # - "gocognit"
+    # TODO: enable
     # - "goconst"
-    # - "gocritic"
-    # - "gocyclo"
     - "godoclint"
-    # - "godot"
-    # - "godox"
-    # - "goheader"
-    # - "gomoddirectives"
-    # - "gomodguard"
-    # - "goprintffuncname"
-    # - "gosec"
-    # - "gosmopolitan"
+    - "godot"
+    - "goprintffuncname"
+    - "gosec"
     - "govet"
-    # - "grouper"
-    # - "iface"
-    # - "importas"
-    # - "inamedparam"
-    # - "ineffassign"
-    # - "interfacebloat"
-    # - "intrange"
-    # - "iotamixing"
-    # - "ireturn"
-    # - "lll"
-    # - "loggercheck"
-    # - "maintidx"
-    # - "makezero"
-    # - "mirror"
-    # - "misspell"
-    # - "mnd"
-    # - "modernize"
-    # - "musttag"
-    # - "nakedret"
-    # - "nestif"
-    # - "nilerr"
-    # - "nilnesserr"
-    # - "nilnil"
-    # - "nlreturn"
-    # - "noctx"
-    # - "noinlineerr"
-    # - "nolintlint"
-    # - "nonamedreturns"
-    # - "nosprintfhostport"
-    # - "paralleltest"
-    # - "perfsprint"
-    # - "prealloc"
-    # - "predeclared"
-    # - "promlinter"
+    - "grouper"
+    - "iface"
+    - "inamedparam"
+    - "ineffassign"
+    - "interfacebloat"
+    - "intrange"
+    - "iotamixing"
+    - "ireturn"
+    - "lll"
+    - "makezero"
+    - "mirror"
+    - "misspell"
+    - "modernize"
+    - "nakedret"
+    - "nestif"
+    - "nilnesserr"
+    - "nilnil"
+    - "nlreturn"
+    - "noctx"
+    - "nolintlint"
+    - "nonamedreturns"
+    - "nosprintfhostport"
+    - "perfsprint"
+    - "predeclared"
     - "protogetter"
-    # - "reassign"
-    # - "recvcheck"
+    - "reassign"
+    - "recvcheck"
     - "revive"
-    # - "rowserrcheck"
-    # - "sloglint"
-    # - "spancheck"
-    # - "sqlclosecheck"
+    - "rowserrcheck"
+    - "sloglint"
+    - "sqlclosecheck"
     - "staticcheck"
-    # - "tagalign"
-    # - "tagliatelle"
-    # - "testableexamples"
-    # - "testifylint"
-    # - "testpackage"
-    # - "thelper"
-    # - "tparallel"
-    # - "unconvert"
-    # - "unparam"
-    # - "unqueryvet"
-    # - "unused"
-    # - "usestdlibvars"
-    # - "usetesting"
-    # - "varnamelen"
-    # - "wastedassign"
-    # - "whitespace"
-    # - "wrapcheck"
-    # - "wsl_v5"
-    # - "zerologlint"
+    - "tagalign"
+    - "tagliatelle"
+    - "testifylint"
+    - "thelper"
+    - "unqueryvet"
+    - "usestdlibvars"
+    - "wastedassign"
+    - "whitespace"
+    - "wrapcheck"
+    - "wsl_v5"
   disable: []
   # See: https://golangci-lint.run/docs/linters/configuration
   settings:
+    decorder:
+      disable-dec-order-check: false # defaults to "true", for some reason
+      dec-order:
+        - "const"
+        - "var"
+        - "type"
+        - "func"
+    dogsled:
+      max-blank-identifiers: 1
+    dupl:
+      threshold: 100
+    errcheck:
+      # TODO: see associated Docker Compose-related comment in the following method for when to set
+      # this to "true":
+      # internal/tasks/tools/containertools.imageBuildPush.Exec
+      check-type-assertions: false
+      check-blank: true
+      verbose: true
+    exhaustive:
+      check:
+        - "switch"
+        - "map"
+      default-case-required: true
+    fatcontext:
+      # NOTE: may generate false positives.
+      check-struct-pointers: true
+    funcorder:
+      constructor: true
+      struct-method: true
+      alphabetical: false
+    goconst:
+      min-len: 2
+      min-occurrences: 2
+      numbers: true
+      ignore-calls: false
+      find-duplicates: true
+      eval-const-expressions: true
+    godoclint:
+      default: "none"
+      enable:
+        - "pkg-doc"
+        - "single-pkg-doc"
+        - "require-pkg-doc"
+        - "start-with-name"
+        # - "require-doc"
+        - "deprecated"
+        - "max-len"
+        - "no-unused-link"
+      options:
+        max-len:
+          length: 120
+    godot:
+      scope: "toplevel"
+      capital: true
+    gosec:
+      excludes:
+        - "G204"
+        - "G304"
+      config:
+        G302: "0700" # so we can mark e.g. built files as executable
+    govet:
+      enable-all: true
+      disable:
+        - "fieldalignment"
+      settings:
+        shadow:
+          strict: true
+    grouper:
+      const-require-single-const: true
+      import-require-single-import: true
+      type-require-single-type: true
+      var-require-single-var: true
+    iface:
+      enable:
+        - "identical"
+        - "unused"
+        - "opaque"
+        - "unexported"
+    interfacebloat:
+      max: 10
+    ireturn:
+      allow:
+        - "anon"
+        - "empty"
+        - "error"
+        - "stdlib"
+        - "(or|er)$"
+    lll:
+      line-length: 120
+    misspell:
+      locale: "US"
+      mode: "restricted"
+    nakedret:
+      max-func-lines: 0
+    nestif:
+      min-complexity: 5
+    nilnil:
+      only-two: true
+      detect-opposite: true
+    nlreturn:
+      block-size: 2
+    nolintlint:
+      # Prevents the usage of "//nolint:" directives
+      allow-unused: false
+      require-explanation: true
+    nonamedreturns:
+      report-error-in-defer: false
+    perfsprint:
+      strconcat: false
+    reassign:
+      patterns:
+        - ".*"
+    rowserrcheck:
+      # NOTE: database/sql is always checked.
+      packages:
+        - "github.com/jmoiron/sqlx"
     revive:
       confidence: 0.8
       errorCode: 1
@@ -129,11 +216,57 @@ linters:
       rules:
         - name: "increment-decrement"
           disabled: true
+    sloglint:
+      kv-only: true
+      no-global: "all"
+      context: "all"
+      static-msg: false
+      msg-style: "capitalized"
+      no-raw-keys: false
+      key-naming-case: "snake"
+      forbidden-keys:
+        - "time"
+        - "level"
+        - "msg"
+        - "source"
+        - "foo"
+      args-on-sep-lines: true
     staticcheck:
       checks:
         - "all"
         # staticcheck won't ignore generated code for this one, so revive handles this check instead
         - "-ST1000"
+    tagalign:
+      align: true
+      sort: true
+      strict: true
+    tagliatelle:
+      case:
+        rules:
+          avro: "snake"
+          bson: "snake"
+          db: "snake"
+          env: "snake"
+          envconfig: "snake"
+          json: "snake"
+          mapstructure: "snake"
+          toml: "snake"
+          xml: "snake"
+          yaml: "snake"
+    testifylint:
+      enable-all: true
+    usestdlibvars:
+      constant-kind: true
+      crypto-hash: true
+      default-rpc-path: true
+      http-method: true
+      http-status-code: true
+      sql-isolation-level: true
+      time-date-month: true
+      time-layout: true
+      time-month: true
+      time-weekday: true
+      tls-signature-scheme: true
   exclusions:
     # See: https://go.dev/s/generatedcode
     generated: "strict"

@@ -46,7 +46,7 @@ func getDeliveryTaskMap(repo taskutil.Repo) (taskutil.TaskMap, error) {
 }
 
 // Run defines the behavior for running all Delivery tasks for the repository.
-func Run(ctx context.Context) (err error) {
+func Run(ctx context.Context) (outErr error) {
 	// We intentionally run CI tasks before allowing any Delivery tasks to begin
 	if err := ci.Run(ctx); err != nil {
 		return fmt.Errorf("running CI tasks before Delivery tasks: %w", err)
@@ -55,7 +55,7 @@ func Run(ctx context.Context) (err error) {
 	// The mise config that oscar uses is written during init, so be sure to defer its removal here
 	defer func() {
 		if rmErr := os.RemoveAll(consts.MiseConfigFileName); rmErr != nil {
-			err = errors.Join(err, fmt.Errorf("removing mise config file: %w", rmErr))
+			outErr = errors.Join(outErr, fmt.Errorf("removing mise config file: %w", rmErr))
 		}
 	}()
 
@@ -98,10 +98,10 @@ func Run(ctx context.Context) (err error) {
 	}
 
 	if len(run.Failures) > 0 {
-		return run.ReportFailure(err)
+		return fmt.Errorf("running delivery tasks: %w", run.ReportFailure(err))
 	}
 
 	run.ReportSuccess()
 
-	return err
+	return outErr
 }

@@ -42,11 +42,11 @@ func (t hadolint) InfoText() string { return "Lint (hadolint)" }
 // Exec implements [taskutil.Tasker.Exec].
 func (t hadolint) Exec(ctx context.Context) error {
 	if err := toolcfg.SetupConfigFile(t.Tool); err != nil {
-		return err
+		return fmt.Errorf("setting up hadolint config file: %w", err)
 	}
 
 	if _, err := system.RunCommand(ctx, t.RenderRunCommandArgs()); err != nil {
-		return err
+		return fmt.Errorf("running hadolint: %w", err)
 	}
 
 	return nil

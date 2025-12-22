@@ -7,7 +7,7 @@ buf = "1.57.2"
 github-cli = "2.79.0"
 go = "1.25.5"
 hadolint = "2.13.1"
-markdownlint-cli2 = "0.18.1"
+markdownlint-cli2 = "0.20.0"
 # required for markdownlint-cli2
 node = "24.8.0"
 protobuf = "32.1"
@@ -29,3 +29,4 @@ yamllint = "1.37.1"
 ### Python-specific tools. Note that others that may also be CLI tools, may be run internally via
 ### `uvx` instead.
 ruff = "0.13.1"
+# ty = "0.0.5" # NOTE: not in registry at the time of this writing, will need to run with uvx

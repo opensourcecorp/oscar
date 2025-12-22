@@ -11,52 +11,58 @@ import (
 	"github.com/opensourcecorp/oscar/internal/system"
 )
 
-// Git holds metadata about the current state of the Git repository.
-type Git struct {
-	// The root directory of the repository on the host.
-	Root string
-	// The current branch name.
-	Branch string
-	// The latest tag available in the repo.
-	LatestTag string
-	// The latest commit on the current branch.
-	LatestCommit string
-	// Whether or not the working directory has uncommitted changes.
-	IsDirty bool
-}
+type (
+	// Git holds metadata about the current state of the Git repository.
+	Git struct {
+		// The root directory of the repository on the host.
+		Root string
+		// The current branch name.
+		Branch string
+		// The latest tag available in the repo.
+		LatestTag string
+		// The latest commit on the current branch.
+		LatestCommit string
+		// Whether or not the working directory has uncommitted changes.
+		IsDirty bool
+	}
 
-// Status holds various pieces of information about Git status.
-type Status struct {
-	// The list of modified files.
-	Diff []string
-	// The list of untracked files.
-	UntrackedFiles []string
-}
+	// Status holds various pieces of information about Git status.
+	Status struct {
+		// The list of modified files.
+		Diff []string
+		// The list of untracked files.
+		UntrackedFiles []string
+	}
+)
 
 // New returns a populated [Git].
 func New(ctx context.Context) (*Git, error) {
 	root, err := system.RunCommand(ctx, []string{"git", "rev-parse", "--show-toplevel"})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("getting Git root: %w", err)
 	}
+
 	iprint.Debugf("Git root on host: '%s'\n", root)
 
 	branch, err := system.RunCommand(ctx, []string{"git", "rev-parse", "--abbrev-ref", "HEAD"})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("getting Git branch name: %w", err)
 	}
+
 	iprint.Debugf("Git branch: '%s'\n", branch)
 
 	latestTag, err := system.RunCommand(ctx, []string{"bash", "-c", "git tag --list | tail -n1"})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("getting latest Git tag: %w", err)
 	}
+
 	iprint.Debugf("latest Git tag: '%s'\n", latestTag)
 
 	latestCommit, err := system.RunCommand(ctx, []string{"git", "rev-parse", "--short=8", "HEAD"})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("getting latest Git commit: %w", err)
 	}
+
 	iprint.Debugf("latest Git commit: '%s'\n", latestCommit)
 
 	gitStatus, err := getRawStatus(ctx)
@@ -89,19 +95,21 @@ func (g *Git) SanitizedBranch() string {
 
 // String implements [fmt.Stringer].
 func (g *Git) String() string {
-	out := "Current Git information:\n"
+	var out strings.Builder
+	out.WriteString("Current Git information:\n")
 
-	t := reflect.TypeOf(*g)
+	t := reflect.TypeFor[Git]()
+
 	v := reflect.ValueOf(*g)
 	for i := range v.NumField() {
 		field := t.Field(i)
 		value := v.Field(i)
-		out += fmt.Sprintf("- %s: %v\n", field.Name, value)
+		out.WriteString(fmt.Sprintf("- %s: %v\n", field.Name, value))
 	}
 
-	out += "\n"
+	out.WriteString("\n")
 
-	return out
+	return out.String()
 }
 
 // getRawStatus returns a slightly-modified "git status" output, so that calling tools can parse it
@@ -117,10 +125,12 @@ func getRawStatus(ctx context.Context) (Status, error) {
 
 	untrackedFiles := make([]string, 0)
 	diff := make([]string, 0)
+
 	for _, line := range outputSplit {
 		if line == "" {
 			continue
 		}
+
 		if strings.HasPrefix(line, "??") {
 			filename := strings.ReplaceAll(line, "?? ", "")
 			untrackedFiles = append(untrackedFiles, filename)

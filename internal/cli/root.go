@@ -57,8 +57,9 @@ func NewRootCmd() *cli.Command {
 				},
 			},
 			&cli.BoolFlag{
-				Name:    noColorFlagName,
-				Usage:   "Pass to suppress printing colored terminal output. Note that oscar defaults to printing in color during interactive runs.",
+				Name: noColorFlagName,
+				Usage: "Pass to suppress printing colored terminal output. " +
+					"Note that oscar defaults to printing in color during interactive runs.",
 				Sources: cli.EnvVars(consts.OscarEnvVarNoColor),
 				Action: func(_ context.Context, _ *cli.Command, _ bool) error {
 					return os.Setenv(consts.OscarEnvVarNoColor, "true")
@@ -95,7 +96,11 @@ func getVersion() (string, error) {
 // rootAction defines the logic for oscar's root command.
 func rootAction(_ context.Context, cmd *cli.Command) error {
 	iprint.Debugf("oscar root command\n")
-	_ = cli.ShowAppHelp(cmd)
+
+	if err := cli.ShowAppHelp(cmd); err != nil {
+		return fmt.Errorf("internal error trying to show command help: %w", err)
+	}
+
 	return errors.New("\nERROR: oscar requires a valid subcommand")
 }
 
