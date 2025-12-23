@@ -36,7 +36,9 @@ test: ci
 # have a stage-copiable output
 build: FORCE
 	@$(RUN) go build -ldflags '-s -w -extldflags "-static"' -o ./build/$(BINNAME) ./cmd/$(BINNAME)
-	@upx --best ./build/$(BINNAME)
+	@if [[ "$$(uname -s)" == "Linux" ]] ; then \
+		upx --best ./build/$(BINNAME) ; \
+	fi
 
 clean: FORCE
 	@rm -rf \
