@@ -19,7 +19,9 @@ const (
 
 	// MiseVersion is the default version of mise to install if not present. Can be overridden via
 	// the `MISE_VERSION` env var, which is checked elsewhere.
-	MiseVersion = "v2025.11.11"
+	//
+	// NOTE: set via 'make set-mise-version'.
+	MiseVersion = "v2025.12.0"
 
 	// DefaultOscarCfgFileName is the default basename of oscar's config file.
 	DefaultOscarCfgFileName = "oscar.yaml"

@@ -17,7 +17,13 @@ export IMAGE_NAME ?= $(BINNAME)
 export IMAGE_TAG ?= latest
 export IMAGE_URI ?= $(IMAGE_REGISTRY)/$(IMAGE_REGISTRY_OWNER)/$(IMAGE_NAME):$(IMAGE_TAG)
 
-SHELL = /usr/bin/env bash -euo pipefail
+# use the intended GNU tools on macOS
+gawk = $(shell command -v gawk)
+gsed = $(shell command -v sed)
+ifeq ($(shell uname -s),Darwin)
+gawk = $(shell command -v gawk)
+gsed = $(shell command -v gsed)
+endif
 
 all: ci
 
@@ -53,7 +59,7 @@ clean: FORCE
 
 image: clean
 	@export BUILDKIT_PROGRESS=plain && \
-	export GO_VERSION="$$(awk '/^go/ { print $$2 }' go.mod)" && \
+	export GO_VERSION="$$($(gawk) '/^go/ { print $$2 }' go.mod)" && \
 	$(RUN) $(DOCKER) compose build
 
 run-image: FORCE
@@ -61,3 +67,7 @@ run-image: FORCE
 
 generate: FORCE
 	@cd ./proto && $(RUN) buf generate
+
+set-mise-version:
+	@find . -type f \
+	| xargs -I{} $(gsed) -i -E 's/(MISE_VERSION.*|MiseVersion.*)([0-9]{4}\.[0-9]+\.[0-9]+)/\1$(mise_version)/g' {}
