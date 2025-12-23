@@ -68,6 +68,8 @@ run-image: FORCE
 generate: FORCE
 	@cd ./proto && $(RUN) buf generate
 
+# Since some variant of "MISE_VERSION" shows up in a lot of disjointed places in the codebase, this
+# lets us update all of them at once
 set-mise-version:
 	@find . -type f \
 	| xargs -I{} $(gsed) -i -E 's/(MISE_VERSION.*|MiseVersion.*)([0-9]{4}\.[0-9]+\.[0-9]+)/\1$(mise_version)/g' {}
