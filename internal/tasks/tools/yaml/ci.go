@@ -51,14 +51,14 @@ func NewTasksForCI(repo taskutil.Repo) []taskutil.Tasker {
 // InfoText implements [taskutil.Tasker.InfoText].
 func (t yamllint) InfoText() string { return "Lint (yamllint)" }
 
-// Run implements [taskutil.Tasker.Run].
+// Exec implements [taskutil.Tasker.Exec].
 func (t yamllint) Exec(ctx context.Context) error {
 	if err := toolcfg.SetupConfigFile(t.Tool); err != nil {
-		return err
+		return fmt.Errorf("setting up yamllint config file: %w", err)
 	}
 
 	if _, err := system.RunCommand(ctx, t.RenderRunCommandArgs()); err != nil {
-		return err
+		return fmt.Errorf("running yamllint: %w", err)
 	}
 
 	return nil
@@ -70,14 +70,14 @@ func (t yamllint) Post(_ context.Context) error { return nil }
 // InfoText implements [taskutil.Tasker.InfoText].
 func (t yamlfmt) InfoText() string { return "Format (yamlfmt)" }
 
-// Run implements [taskutil.Tasker.Run].
+// Exec implements [taskutil.Tasker.Exec].
 func (t yamlfmt) Exec(ctx context.Context) error {
 	if err := toolcfg.SetupConfigFile(t.Tool); err != nil {
-		return err
+		return fmt.Errorf("setting up yamlfmt config file: %w", err)
 	}
 
 	if _, err := system.RunCommand(ctx, t.RenderRunCommandArgs()); err != nil {
-		return err
+		return fmt.Errorf("running yamlfmt: %w", err)
 	}
 
 	return nil

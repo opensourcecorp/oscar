@@ -2,6 +2,7 @@ package shtools
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/opensourcecorp/oscar/internal/system"
 	taskutil "github.com/opensourcecorp/oscar/internal/tasks/util"
@@ -43,10 +44,10 @@ func NewTasksForCI(repo taskutil.Repo) []taskutil.Tasker {
 // InfoText implements [taskutil.Tasker.InfoText].
 func (t shellcheck) InfoText() string { return "Lint (shellcheck)" }
 
-// Run implements [taskutil.Tasker.Run].
+// Exec implements [taskutil.Tasker.Exec].
 func (t shellcheck) Exec(ctx context.Context) error {
 	if _, err := system.RunCommand(ctx, t.RunArgs); err != nil {
-		return err
+		return fmt.Errorf("running shellcheck: %w", err)
 	}
 
 	return nil
@@ -58,10 +59,10 @@ func (t shellcheck) Post(_ context.Context) error { return nil }
 // InfoText implements [taskutil.Tasker.InfoText].
 func (t shfmt) InfoText() string { return "Format (shfmt)" }
 
-// Run implements [taskutil.Tasker.Run].
+// Exec implements [taskutil.Tasker.Exec].
 func (t shfmt) Exec(ctx context.Context) error {
 	if _, err := system.RunCommand(ctx, t.RunArgs); err != nil {
-		return err
+		return fmt.Errorf("running shfmt: %w", err)
 	}
 
 	return nil

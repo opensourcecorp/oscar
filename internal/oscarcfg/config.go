@@ -25,28 +25,32 @@ func Get(pathOverride ...string) (*oscarcfgpbv1.Config, error) {
 		path = pathOverride[0]
 	}
 
-	yamlData, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("reading oscar config file: %w", err)
+	yamlData, readErr := os.ReadFile(path)
+	if readErr != nil {
+		return nil, fmt.Errorf("reading oscar config file: %w", readErr)
 	}
+
 	iprint.Debugf("data read from oscar config file:\n%s\n", string(yamlData))
 
 	jsonSweepMap := make(map[string]any)
 	if err := yaml.Unmarshal(yamlData, jsonSweepMap); err != nil {
 		panic(err)
 	}
+
 	iprint.Debugf("YAML data unmarshalled to map: %+v\n", jsonSweepMap)
 
-	jsonData, err := json.Marshal(jsonSweepMap)
-	if err != nil {
-		panic(err)
+	jsonData, mErr := json.Marshal(jsonSweepMap)
+	if mErr != nil {
+		panic(mErr)
 	}
+
 	iprint.Debugf("map data as JSON string: %s\n", string(jsonData))
 
-	var cfg = &oscarcfgpbv1.Config{}
+	cfg := &oscarcfgpbv1.Config{}
 	if err := protojson.Unmarshal(jsonData, cfg); err != nil {
 		return nil, fmt.Errorf("unmarshalling oscar config file '%s': %w", path, err)
 	}
+
 	iprint.Debugf("proto message: %+v\n", cfg)
 
 	if err := protovalidate.Validate(cfg); err != nil {

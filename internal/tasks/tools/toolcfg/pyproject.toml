@@ -7,7 +7,11 @@ requires-python = ">=3.12.0"
 dependencies = []
 
 [dependency-groups]
-dev = []
+dev = [
+    "pydoclint>=0.8.3",
+    "ruff>=0.14.10",
+    "ty>=0.0.5",
+]
 
 [build-system]
 requires = ["hatchling"]
@@ -22,11 +26,8 @@ packages = ["src/foo"]
 # Allows for `pip install`s of the package, in case it has a GitHub dependency
 allow-direct-references = true
 
-# mypy does type-checking
-[tool.mypy]
-# Don't fail on imported packages that themselves don't have type stubs
-ignore_missing_imports = true
-exclude = []
+# ty does type-checking
+[tool.ty]
 
 # pydoclint lints docstrings.
 # Configuration options: https://jsh9.github.io/pydoclint/config_options.html

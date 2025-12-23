@@ -6,10 +6,13 @@ services:
       context: "."
       dockerfile: "./Containerfile"
       args:
-        GO_VERSION: "${GO_VERSION:-1.25.0}"
-        MISE_VERSION: "${MISE_VERSION:-v2025.9.10}"
+        GITHUB_TOKEN: "${GITHUB_TOKEN:-}"
+        GO_VERSION: "${GO_VERSION:-}"
+        GOPRIVATE: "${GOPRIVATE:-}"
         http_proxy: "${http_proxy:-}"
         https_proxy: "${https_proxy:-}"
+        MISE_GITHUB_TOKEN: "${MISE_GITHUB_TOKEN:-}"
+        MISE_VERSION: "${MISE_VERSION:-v2025.12.0}" # NOTE: set via 'make set-mise-version'
     image: "${IMAGE_URI:-}"
     pull_policy: "build"
     command:
@@ -17,6 +20,9 @@ services:
     environment:
       http_proxy: "${http_proxy}"
       https_proxy: "${https_proxy}"
+      GITHUB_TOKEN: "${GITHUB_TOKEN}"
+      MISE_GITHUB_TOKEN: "${MISE_GITHUB_TOKEN}"
+      GOPRIVATE: "${GOPRIVATE}"
     volumes:
       - type: "bind"
         source: "${PWD}"

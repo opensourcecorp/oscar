@@ -10,7 +10,7 @@ import (
 
 // Banner prints the oscar stylistic banner.
 func Banner() {
-	var banner = `
+	banner := `
            ____________________         \
 =~=~=~=~=/____________________/|---------\
 ~=~=~=~=|  _   _   _  _   _  |/|----------\
@@ -48,7 +48,10 @@ func Warnf(format string, args ...any) {
 	); err != nil {
 		// NOTE: panicking is fine here, this would be catastrophic lol
 		panic(
-			fmt.Sprintf(colors.ErrorColor+"trying to write warning to stderr: %v"+colors.Reset, err),
+			fmt.Sprintf(
+				colors.ErrorColor+"trying to write warning to stderr: %v"+colors.Reset,
+				err,
+			),
 		)
 	}
 }
@@ -68,7 +71,7 @@ func Errorf(format string, args ...any) {
 	}
 }
 
-// Goodf is a helper function that prints green info text indicating something went well
+// Goodf is a helper function that prints green info text indicating something went well.
 func Goodf(format string, args ...any) {
 	colors := Colors()
 	fmt.Printf(colors.GoodColor+format+colors.Reset, args...)
@@ -77,5 +80,5 @@ func Goodf(format string, args ...any) {
 // RunDurationString returns a calculated duration used to indicate how long a particular Task (or
 // set of Tasks) took to run.
 func RunDurationString(t time.Time) string {
-	return fmt.Sprintf("t: %s", time.Since(t).Round(time.Second/1000).String())
+	return "t: " + time.Since(t).Round(time.Second/1000).String()
 }

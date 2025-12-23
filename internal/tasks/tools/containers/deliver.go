@@ -18,18 +18,18 @@ import (
 
 type (
 	imageBuildPush struct{ taskutil.Tool }
+
+	// RegistryMapping contains substructs to be used based on the target OCI registry.
+	registryMapping struct {
+		GitHub gitHubRegistry
+	}
+
+	// GitHubRegistry provides fields for use in targeting "ghcr.io".
+	gitHubRegistry struct {
+		// The command to run to authenticate to the registry.
+		AuthCommand []string
+	}
 )
-
-// registryMapping contains substructs to be used based on the target OCI registry.
-type registryMapping struct {
-	GitHub gitHubRegistry
-}
-
-// gitHubRegistry provides fields for use in targeting "ghcr.io".
-type gitHubRegistry struct {
-	// The command to run to authenticate to the registry.
-	AuthCommand []string
-}
 
 // newRegistryMap returns a populated [registryMapping].
 func newRegistryMap(username string) registryMapping {
@@ -47,7 +47,7 @@ func newRegistryMap(username string) registryMapping {
 func NewTasksForDelivery(repo taskutil.Repo) ([]taskutil.Tasker, error) {
 	cfg, err := oscarcfg.Get()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("getting oscarcfg: %w", err)
 	}
 
 	if repo.HasContainerfile {
@@ -66,64 +66,70 @@ func NewTasksForDelivery(repo taskutil.Repo) ([]taskutil.Tasker, error) {
 // InfoText implements [taskutil.Tasker.InfoText].
 func (t imageBuildPush) InfoText() string { return "Image Build & Push" }
 
-// Run implements [taskutil.Tasker.Run].
+// Exec implements [taskutil.Tasker.Exec].
 func (t imageBuildPush) Exec(ctx context.Context) error {
-	rootCfg, err := oscarcfg.Get()
-	if err != nil {
-		return err
+	rootCfg, cfgErr := oscarcfg.Get()
+	if cfgErr != nil {
+		return fmt.Errorf("getting oscarcfg: %w", cfgErr)
 	}
+
 	cfg := rootCfg.GetDeliverables().GetContainerImage()
 
-	uri, err := constructImageURI(ctx, rootCfg)
-	if err != nil {
-		return fmt.Errorf("constructing image URI: %w", err)
+	uri, uriErr := constructImageURI(ctx, rootCfg)
+	if uriErr != nil {
+		return fmt.Errorf("constructing image URI: %w", uriErr)
 	}
 
-	composeFileContents, err := os.ReadFile("docker-compose.yaml")
-	if err != nil {
-		return err
+	// TODO: replace all of the below with the actual Compose API usage, e.g. as found in the README
+	// example here: https://github.com/compose-spec/compose-go
+
+	composeFileContents, readErr := os.ReadFile("docker-compose.yaml")
+	if readErr != nil {
+		return fmt.Errorf("reading docker-compose.yaml file: %w", readErr)
 	}
 
 	composeFile := make(map[string]any)
 	if err := yaml.Unmarshal(composeFileContents, composeFile); err != nil {
-		return err
+		return fmt.Errorf("unmarshalling YAML: %w", err)
 	}
+
 	iprint.Debugf("composeFile unmarshalled: %#v\n", composeFile)
 
-	curDir, err := os.Getwd()
-	if err != nil {
-		return err
+	curDir, wdErr := os.Getwd()
+	if wdErr != nil {
+		return fmt.Errorf("getting workdir: %w", wdErr)
 	}
 
-	// GROSS, DUDE
+	// TODO: GROSS, DUDE. See comment above about using the actual Compose API.
 	composeFile["services"].(map[string]any)[cfg.GetName()].(map[string]any)["image"] = uri
 	composeFile["services"].(map[string]any)[cfg.GetName()].(map[string]any)["build"].(map[string]any)["context"] = curDir
 
-	composeOut, err := yaml.Marshal(composeFile)
-	if err != nil {
-		return err
+	composeOut, mErr := yaml.Marshal(composeFile)
+	if mErr != nil {
+		return fmt.Errorf("marshalling YAML: %w", mErr)
 	}
+
 	iprint.Debugf("edited Compose file YAML: %s\n", string(composeOut))
 
 	workDir := filepath.Join(os.TempDir(), "oscar-oci")
-	if err := os.MkdirAll(workDir, 0755); err != nil {
-		return err
+	if err := os.MkdirAll(workDir, 0700); err != nil {
+		return fmt.Errorf("making Compose directory: %w", err)
 	}
 
 	outPath := filepath.Join(workDir, "docker-compose.yaml")
-	if err := os.WriteFile(outPath, composeOut, 0644); err != nil {
-		return err
+	if err := os.WriteFile(outPath, composeOut, 0600); err != nil {
+		return fmt.Errorf("writing Compose file contents: %w", err)
 	}
 
 	registryMap := newRegistryMap(cfg.GetName())
 
 	var authArgs []string
-	if strings.Contains(cfg.Registry, "ghcr") {
+	if strings.Contains(cfg.GetRegistry(), "ghcr") {
 		authArgs = registryMap.GitHub.AuthCommand
 	}
 
 	if _, err := system.RunCommand(ctx, authArgs); err != nil {
-		return err
+		return fmt.Errorf("running registry auth command: %w", err)
 	}
 
 	buildPushArgs := []string{"bash", "-c", fmt.Sprintf(`
@@ -131,7 +137,7 @@ func (t imageBuildPush) Exec(ctx context.Context) error {
 		`, outPath, cfg.GetName(),
 	)}
 	if _, err := system.RunCommand(ctx, buildPushArgs); err != nil {
-		return err
+		return fmt.Errorf("running image build & push command: %w", err)
 	}
 
 	return nil
@@ -143,6 +149,7 @@ func (t imageBuildPush) Post(_ context.Context) error { return nil }
 // constructImageURI constructs an image URI based on data from oscar's config & Git.
 func constructImageURI(ctx context.Context, rootCfg *oscarcfgpbv1.Config) (string, error) {
 	cfg := rootCfg.GetDeliverables().GetContainerImage()
+
 	git, err := igit.New(ctx)
 	if err != nil {
 		return "", fmt.Errorf("getting Git info: %w", err)
@@ -158,6 +165,7 @@ func constructImageURI(ctx context.Context, rootCfg *oscarcfgpbv1.Config) (strin
 	} else {
 		tag = fmt.Sprintf("%s-%s", git.SanitizedBranch(), git.LatestCommit)
 	}
+
 	if git.IsDirty {
 		tag = fmt.Sprintf("%s-%s-dirty", git.SanitizedBranch(), git.LatestCommit)
 	}

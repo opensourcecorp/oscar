@@ -44,14 +44,16 @@ func NewRun(ctx context.Context, runType string) (Run, error) {
 
 	git, err := igit.New(ctx)
 	if err != nil {
-		return Run{}, err
+		return Run{}, fmt.Errorf("creating Git handler: %w", err)
 	}
+
 	iprint.Infof(colors.Gray + git.String() + colors.Reset)
 
 	repo, err := NewRepo(ctx)
 	if err != nil {
 		return Run{}, fmt.Errorf("getting repo composition: %w", err)
 	}
+
 	iprint.Infof(colors.Gray + repo.String() + colors.Reset)
 
 	return Run{
@@ -108,14 +110,17 @@ func (run Run) ReportSuccess() {
 // ReportFailure prints information about the failure of a [Run]. It takes an `error` arg in case
 // the caller is expecting to return a joined error because of e.g. deferred calls or later-checked
 // errors that an outer variable already holds.
-func (run Run) ReportFailure(err error) error {
+func (run Run) ReportFailure(outErr error) error {
 	iprint.Errorf("\n%s\n", strings.Repeat("=", 65))
 	iprint.Errorf("The following tasks failed: (%s)\n", iprint.RunDurationString(run.StartTime))
+
 	for _, f := range run.Failures {
 		iprint.Errorf("- %s\n", f)
 	}
+
 	iprint.Errorf("%s\n\n", strings.Repeat("=", 65))
 
-	err = errors.Join(err, errors.New("one or more tasks failed"))
-	return err
+	outErr = errors.Join(outErr, errors.New("one or more tasks failed"))
+
+	return outErr
 }

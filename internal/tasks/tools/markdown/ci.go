@@ -2,6 +2,7 @@ package mdtools
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -20,7 +21,15 @@ func NewTasksForCI(repo taskutil.Repo) []taskutil.Tasker {
 		return []taskutil.Tasker{
 			markdownlint{
 				Tool: taskutil.Tool{
-					RunArgs:        []string{"markdownlint-cli2", "--config", "{{ConfigFilePath}}", "**/*.md"},
+					RunArgs: []string{
+						"markdownlint-cli2",
+						"--config", "{{ConfigFilePath}}",
+						"**/*.md",
+						// NOTE: unfortunately, getting markdownlint-cli2 to work with _its own
+						// config file_ is apparently more difficult than it needs to be, so any
+						// ignored paths need to be set directly in the CLI call here
+						"#**/*venv*/**/*.md",
+					},
 					ConfigFilePath: filepath.Join(os.TempDir(), ".markdownlint-cli2.yaml"),
 				},
 			},
@@ -36,11 +45,11 @@ func (t markdownlint) InfoText() string { return "Lint (markdownlint)" }
 // Exec implements [taskutil.Tasker.Exec].
 func (t markdownlint) Exec(ctx context.Context) error {
 	if err := toolcfg.SetupConfigFile(t.Tool); err != nil {
-		return err
+		return fmt.Errorf("setting up markdownlint config file: %w", err)
 	}
 
 	if _, err := system.RunCommand(ctx, t.RenderRunCommandArgs()); err != nil {
-		return err
+		return fmt.Errorf("running markdownlint: %w", err)
 	}
 
 	return nil

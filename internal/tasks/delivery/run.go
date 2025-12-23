@@ -20,6 +20,7 @@ import (
 // name.
 func getDeliveryTaskMap(repo taskutil.Repo) (taskutil.TaskMap, error) {
 	out := make(taskutil.TaskMap)
+
 	for langName, getTasksFunc := range map[string]func(taskutil.Repo) ([]taskutil.Tasker, error){
 		// Independent of Delivery tasks, always push a Git Tag first
 		"0 - Create Git Tag": gittagtools.NewTasksForDelivery,
@@ -45,7 +46,7 @@ func getDeliveryTaskMap(repo taskutil.Repo) (taskutil.TaskMap, error) {
 }
 
 // Run defines the behavior for running all Delivery tasks for the repository.
-func Run(ctx context.Context) (err error) {
+func Run(ctx context.Context) (outErr error) {
 	// We intentionally run CI tasks before allowing any Delivery tasks to begin
 	if err := ci.Run(ctx); err != nil {
 		return fmt.Errorf("running CI tasks before Delivery tasks: %w", err)
@@ -54,7 +55,7 @@ func Run(ctx context.Context) (err error) {
 	// The mise config that oscar uses is written during init, so be sure to defer its removal here
 	defer func() {
 		if rmErr := os.RemoveAll(consts.MiseConfigFileName); rmErr != nil {
-			err = errors.Join(err, fmt.Errorf("removing mise config file: %w", rmErr))
+			outErr = errors.Join(outErr, fmt.Errorf("removing mise config file: %w", rmErr))
 		}
 	}()
 
@@ -75,14 +76,16 @@ func Run(ctx context.Context) (err error) {
 
 		for _, task := range tasks {
 			taskStartTime := time.Now()
+
 			run.PrintTaskBanner(task)
 
 			// NOTE: this error is checked later, when we can check the Run, Post, and git-diff
 			// potential errors together
 			var runErr error
-			runErr = errors.Join(runErr, task.Exec(ctx))
-			runErr = errors.Join(runErr, task.Post(ctx))
 
+			runErr = errors.Join(runErr, task.Exec(ctx))
+
+			runErr = errors.Join(runErr, task.Post(ctx))
 			if runErr != nil {
 				iprint.Errorf("FAILED    (%s)\n", iprint.RunDurationString(taskStartTime))
 				iprint.Errorf("%v\n", runErr)
@@ -95,10 +98,10 @@ func Run(ctx context.Context) (err error) {
 	}
 
 	if len(run.Failures) > 0 {
-		return run.ReportFailure(err)
+		return fmt.Errorf("running delivery tasks: %w", run.ReportFailure(err))
 	}
 
 	run.ReportSuccess()
 
-	return err
+	return outErr
 }

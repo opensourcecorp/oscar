@@ -1,4 +1,7 @@
+ARG GITHUB_TOKEN
 ARG GO_VERSION
+ARG GOPRIVATE
+ARG MISE_GITHUB_TOKEN
 ARG MISE_VERSION
 
 # These two proxy args are helpful if you're trying to build on a corporate network -- they do not
@@ -14,13 +17,15 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
         bash \
         ca-certificates \
         make \
+        upx \
         && \
         rm -rf /var/lib/apt*
 
 COPY . /go/app
 WORKDIR /go/app
 
-RUN make build
+RUN --mount=type=cache,target=/go/pkg/mod \
+    make build
 
 ####################################################################################################
 
@@ -44,7 +49,9 @@ WORKDIR /go/app
 
 # NOTE: when creating some shims, mise refers to itself assuming it is on the $PATH, so we need to
 # symlink it out so it can do that
-RUN ln -fs "${HOME}/.oscar/bin/mise" /usr/local/bin/mise && \
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.oscar \
+    ln -fs "${HOME}/.oscar/bin/mise" /usr/local/bin/mise && \
     bash ./scripts/test-bootstrap.sh setup && \
     /oscar ci
 

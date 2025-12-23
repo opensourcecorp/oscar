@@ -20,9 +20,10 @@ import (
 	taskutil "github.com/opensourcecorp/oscar/internal/tasks/util"
 )
 
-// getCITaskMap assembles the overall list of CI tasks, keyed by their language/tooling name
+// getCITaskMap assembles the overall list of CI tasks, keyed by their language/tooling name.
 func getCITaskMap(repo taskutil.Repo) (taskutil.TaskMap, error) {
 	out := make(taskutil.TaskMap)
+
 	for langName, getTasksFunc := range map[string]func(taskutil.Repo) []taskutil.Tasker{
 		"Versioning": versiontools.NewTasksForCI,
 		"Go":         gotools.NewTasksForCI,
@@ -45,50 +46,54 @@ func getCITaskMap(repo taskutil.Repo) (taskutil.TaskMap, error) {
 }
 
 // Run defines the behavior for running all CI tasks for the repository.
-func Run(ctx context.Context) (err error) {
+func Run(ctx context.Context) (outErr error) {
 	// The mise config that oscar uses is written during init, so be sure to defer its removal here
 	defer func() {
 		if rmErr := os.RemoveAll(consts.MiseConfigFileName); rmErr != nil {
-			err = errors.Join(err, fmt.Errorf("removing mise config file: %w", rmErr))
+			outErr = errors.Join(outErr, fmt.Errorf("removing mise config file: %w", rmErr))
 		}
 	}()
 
-	run, err := taskutil.NewRun(ctx, "CI")
-	if err != nil {
-		return fmt.Errorf("internal error setting up run info: %w", err)
+	run, newRunErr := taskutil.NewRun(ctx, "CI")
+	if newRunErr != nil {
+		return fmt.Errorf("internal error setting up run info: %w", newRunErr)
 	}
 
-	taskMap, err := getCITaskMap(run.Repo)
-	if err != nil {
-		return err
+	taskMap, getTMErr := getCITaskMap(run.Repo)
+	if getTMErr != nil {
+		return getTMErr
 	}
 
 	// For tracking any changes to Git status etc. after each CI Task runs
-	gitCI, err := igit.NewForCI(ctx)
-	if err != nil {
-		return fmt.Errorf("internal error: %w", err)
+	gitCI, gitErr := igit.NewForCI(ctx)
+	if gitErr != nil {
+		return fmt.Errorf("internal error: %w", gitErr)
 	}
 
 	for _, lang := range taskMap.SortedKeys() {
 		tasks := taskMap[lang]
 
 		run.PrintTaskMapBanner(lang)
+
 		for _, task := range tasks {
 			taskStartTime := time.Now()
+
 			run.PrintTaskBanner(task)
 
 			// NOTE: this error is checked later, when we can check the Run, Post, and git-diff
 			// potential errors together
 			var runErr error
+
 			runErr = errors.Join(runErr, task.Exec(ctx))
 			runErr = errors.Join(runErr, task.Post(ctx))
 
 			if err := gitCI.Update(ctx); err != nil {
 				return fmt.Errorf("internal error: %w", err)
 			}
-			gitStatusHasChanged, err := gitCI.StatusHasChanged(ctx)
-			if err != nil {
-				return fmt.Errorf("internal error: %w", err)
+
+			gitStatusHasChanged, statusErr := gitCI.StatusHasChanged(ctx)
+			if statusErr != nil {
+				return fmt.Errorf("internal error: %w", statusErr)
 			}
 
 			if runErr != nil || gitStatusHasChanged {
@@ -108,9 +113,9 @@ func Run(ctx context.Context) (err error) {
 				run.Failures = append(run.Failures, fmt.Sprintf("%s :: %s", lang, task.InfoText()))
 
 				// Also need to reset the baseline status
-				gitCI, err = igit.NewForCI(ctx)
-				if err != nil {
-					return fmt.Errorf("internal error: %w", err)
+				gitCI, gitErr = igit.NewForCI(ctx)
+				if gitErr != nil {
+					return fmt.Errorf("internal error: %w", gitErr)
 				}
 			} else {
 				iprint.Goodf("PASSED (%s)\n", iprint.RunDurationString(taskStartTime))
@@ -119,10 +124,10 @@ func Run(ctx context.Context) (err error) {
 	}
 
 	if len(run.Failures) > 0 {
-		return run.ReportFailure(err)
+		return fmt.Errorf("running CI: %w", run.ReportFailure(outErr))
 	}
 
 	run.ReportSuccess()
 
-	return err
+	return outErr
 }

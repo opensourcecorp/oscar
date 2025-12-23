@@ -28,11 +28,12 @@ func NewTasksForCI(_ taskutil.Repo) []taskutil.Tasker {
 func (t versionCI) InfoText() string { return "Versioning checks" }
 
 // Exec implements [taskutil.Tasker.Exec].
-func (t versionCI) Exec(ctx context.Context) (err error) {
-	cfg, err := oscarcfg.Get()
-	if err != nil {
-		return fmt.Errorf("getting oscar config: %w", err)
+func (t versionCI) Exec(ctx context.Context) (outErr error) {
+	cfg, cfgErr := oscarcfg.Get()
+	if cfgErr != nil {
+		return fmt.Errorf("getting oscar config: %w", cfgErr)
 	}
+
 	version := cfg.GetVersion()
 	iprint.Debugf("provided version: %s\n", version)
 
@@ -41,18 +42,19 @@ func (t versionCI) Exec(ctx context.Context) (err error) {
 	// least of which being that alternatives would be unreliable in e.g. GitHub Actions CI based on
 	// how it treats PR checkouts et al. A small price to pay for reliability.
 	tmpCloneDir := filepath.Join(os.TempDir(), "oscar-ci", "this-repo")
-	if err := os.MkdirAll(filepath.Dir(tmpCloneDir), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(tmpCloneDir), 0700); err != nil {
 		return fmt.Errorf("creating temp clone parent directory: %w", err)
 	}
+
 	defer func() {
-		if rmErr := os.RemoveAll(tmpCloneDir); rmErr != nil {
-			err = errors.Join(err, fmt.Errorf("removing temp clone directory: %w", rmErr))
+		if err := os.RemoveAll(tmpCloneDir); err != nil {
+			outErr = errors.Join(outErr, fmt.Errorf("removing temp clone directory: %w", err))
 		}
 	}()
 
-	remote, err := system.RunCommand(ctx, []string{"git", "remote", "get-url", "origin"})
-	if err != nil {
-		return fmt.Errorf("determining git root: %w", err)
+	remote, runCmdErr := system.RunCommand(ctx, []string{"git", "remote", "get-url", "origin"})
+	if runCmdErr != nil {
+		return fmt.Errorf("determining git root: %w", runCmdErr)
 	}
 
 	remote = canonicalizeGitRemote(remote)
@@ -61,11 +63,13 @@ func (t versionCI) Exec(ctx context.Context) (err error) {
 		return fmt.Errorf("cloning repo source to temp location: %w", err)
 	}
 
-	mainCfg, err := oscarcfg.Get(filepath.Join(tmpCloneDir, consts.DefaultOscarCfgFileName))
-	if err != nil {
-		return fmt.Errorf("getting oscar config: %w", err)
+	mainBranchCfg, mainBranchCfgErr := oscarcfg.Get(filepath.Join(tmpCloneDir, consts.DefaultOscarCfgFileName))
+	if mainBranchCfgErr != nil {
+		return fmt.Errorf("getting oscar config from main branch: %w", mainBranchCfgErr)
 	}
-	mainVersion := mainCfg.GetVersion()
+
+	mainVersion := mainBranchCfg.GetVersion()
+
 	iprint.Debugf("main version: %s\n", version)
 
 	// Need to check if we're already on the main branch, since checking its version against itself
@@ -73,10 +77,11 @@ func (t versionCI) Exec(ctx context.Context) (err error) {
 	//
 	// TODO: update internal git package to have a type with ALL this info so I stop copy-pasting
 	// shell-outs around
-	branch, err := system.RunCommand(ctx, []string{"git", "rev-parse", "--abbrev-ref", "HEAD"})
-	if err != nil {
-		return fmt.Errorf("checking current Git branch/ref: %w", err)
+	branch, getBranchErr := system.RunCommand(ctx, []string{"git", "rev-parse", "--abbrev-ref", "HEAD"})
+	if getBranchErr != nil {
+		return fmt.Errorf("checking current Git branch/ref: %w", getBranchErr)
 	}
+
 	iprint.Debugf("current Git branch/ref: %s\n", branch)
 
 	if branch != "main" {
@@ -88,7 +93,7 @@ func (t versionCI) Exec(ctx context.Context) (err error) {
 		}
 	}
 
-	return nil
+	return outErr
 }
 
 // Post implements [taskutil.Tasker.Post].

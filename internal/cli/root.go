@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	// Command names and their flags
+	// Command names and their flags.
 	rootCmdName      = "oscar"
 	debugFlagName    = "debug"
 	noBannerFlagName = "no-banner"
@@ -57,8 +57,9 @@ func NewRootCmd() *cli.Command {
 				},
 			},
 			&cli.BoolFlag{
-				Name:    noColorFlagName,
-				Usage:   "Pass to suppress printing colored terminal output. Note that oscar defaults to printing in color during interactive runs.",
+				Name: noColorFlagName,
+				Usage: "Pass to suppress printing colored terminal output. " +
+					"Note that oscar defaults to printing in color during interactive runs.",
 				Sources: cli.EnvVars(consts.OscarEnvVarNoColor),
 				Action: func(_ context.Context, _ *cli.Command, _ bool) error {
 					return os.Setenv(consts.OscarEnvVarNoColor, "true")
@@ -89,13 +90,17 @@ func getVersion() (string, error) {
 		return "", fmt.Errorf("reading oscar config file: %w", err)
 	}
 
-	return cfg.Version, nil
+	return cfg.GetVersion(), nil
 }
 
 // rootAction defines the logic for oscar's root command.
 func rootAction(_ context.Context, cmd *cli.Command) error {
 	iprint.Debugf("oscar root command\n")
-	_ = cli.ShowAppHelp(cmd)
+
+	if err := cli.ShowAppHelp(cmd); err != nil {
+		return fmt.Errorf("internal error trying to show command help: %w", err)
+	}
+
 	return errors.New("\nERROR: oscar requires a valid subcommand")
 }
 

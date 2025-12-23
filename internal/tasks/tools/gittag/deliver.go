@@ -27,9 +27,9 @@ func (t createAndPushTag) InfoText() string { return "Create & Push Git Tag" }
 
 // Exec implements [taskutil.Tasker.Exec].
 func (t createAndPushTag) Exec(ctx context.Context) error {
-	cfg, err := oscarcfg.Get()
-	if err != nil {
-		return err
+	cfg, cfgErr := oscarcfg.Get()
+	if cfgErr != nil {
+		return fmt.Errorf("getting oscarcfg: %w", cfgErr)
 	}
 
 	args := []string{"bash", "-c", fmt.Sprintf(`
@@ -39,7 +39,7 @@ func (t createAndPushTag) Exec(ctx context.Context) error {
 	)}
 
 	if _, err := system.RunCommand(ctx, args); err != nil {
-		return err
+		return fmt.Errorf("creating/pushing Git tag: %w", err)
 	}
 
 	return nil

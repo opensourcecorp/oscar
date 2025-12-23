@@ -23,7 +23,7 @@ type (
 func NewTasksForDelivery(repo taskutil.Repo) ([]taskutil.Tasker, error) {
 	cfg, err := oscarcfg.Get()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("getting oscarcfg: %w", err)
 	}
 
 	if repo.HasGo {
@@ -44,15 +44,16 @@ func (t ghRelease) InfoText() string { return "GitHub Release" }
 
 // Exec implements [taskutil.Tasker.Exec].
 func (t ghRelease) Exec(ctx context.Context) error {
-	cfg, err := oscarcfg.Get()
-	if err != nil {
-		return err
+	cfg, cfgErr := oscarcfg.Get()
+	if cfgErr != nil {
+		return fmt.Errorf("getting oscarcfg: %w", cfgErr)
 	}
 
 	var buildErrs error
 	for _, src := range cfg.GetDeliverables().GetGoGithubRelease().GetBuildSources() {
 		buildErrs = errors.Join(buildErrs, goBuild(ctx, src))
 	}
+
 	if buildErrs != nil {
 		return buildErrs
 	}
@@ -64,7 +65,7 @@ func (t ghRelease) Exec(ctx context.Context) error {
 		return fmt.Errorf("removing dist directory: %w", err)
 	}
 
-	if err := os.MkdirAll(distDir, 0755); err != nil {
+	if err := os.MkdirAll(distDir, 0700); err != nil {
 		return fmt.Errorf("creating dist directory: %w", err)
 	}
 
@@ -89,7 +90,7 @@ func (t ghRelease) Exec(ctx context.Context) error {
 	)}
 
 	if _, err := system.RunCommand(ctx, args); err != nil {
-		return err
+		return fmt.Errorf("running GitHub Release command: %w", err)
 	}
 
 	return nil
@@ -102,7 +103,10 @@ func (t ghRelease) Post(_ context.Context) error { return nil }
 // root-level "build/" subdirectory.
 func goBuild(ctx context.Context, src string) error {
 	if strings.HasSuffix(src, ".go") {
-		return fmt.Errorf("provided Go build source '%s' was a file, but must be a path to a package", src)
+		return fmt.Errorf(
+			"provided Go build source '%s' was a file, but must be a path to a package",
+			src,
+		)
 	}
 
 	targetDir := "build"
@@ -111,7 +115,7 @@ func goBuild(ctx context.Context, src string) error {
 		return fmt.Errorf("removing build directory: %w", err)
 	}
 
-	if err := os.MkdirAll(targetDir, 0755); err != nil {
+	if err := os.MkdirAll(targetDir, 0700); err != nil {
 		return fmt.Errorf("creating build directory: %w", err)
 	}
 
@@ -150,7 +154,7 @@ func goBuild(ctx context.Context, src string) error {
 			return fmt.Errorf("building Go binary: %w", err)
 		}
 
-		if err := os.Chmod(target, 0755); err != nil {
+		if err := os.Chmod(target, 0700); err != nil {
 			return fmt.Errorf("marking target as executable: %w", err)
 		}
 	}
